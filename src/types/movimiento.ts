@@ -15,6 +15,8 @@ export interface Movimiento {
   monto: number; // siempre positivo; el signo se deriva del tipo en la UI
   /** Solo abonos a deuda: porción del abono que reduce el capital. Null = todo el monto es capital. */
   montoCapital?: number | null;
+  /** Solo abonos a deuda: true = cuota regular (cuenta como cuota); false = abono extra a capital. */
+  esCuota?: boolean;
   nota: string;
 }
 
@@ -27,6 +29,7 @@ export interface CrearMovimientoRequest {
   fecha: string;
   monto: number;
   montoCapital?: number | null;
+  esCuota?: boolean;
   nota?: string;
 }
 

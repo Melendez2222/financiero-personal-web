@@ -1,4 +1,4 @@
-import type { Tipo } from './common';
+import type { Tipo, TipoDeuda } from './common';
 
 export interface Categoria {
   id: string;
@@ -15,6 +15,8 @@ export interface Categoria {
   montoTotal?: number | null;
   /** Solo deudas con interés: monto de cada cuota que reduce el capital (el resto es interés). Null = sin interés. */
   capitalPorCuota?: number | null;
+  /** Solo deudas: etiqueta del tipo (préstamo / línea de crédito). */
+  tipoDeuda?: TipoDeuda | null;
   /** Activador: si está activa, se aplica a los periodos que se inicien de aquí en adelante. */
   activo: boolean;
   /** Orden de presentación dentro de su grupo. */
@@ -30,6 +32,7 @@ export interface CrearCategoriaRequest {
   cuotasRestantes?: number | null;
   montoTotal?: number | null;
   capitalPorCuota?: number | null;
+  tipoDeuda?: TipoDeuda | null;
   activo?: boolean;
 }
 

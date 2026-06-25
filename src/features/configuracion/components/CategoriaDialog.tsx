@@ -9,13 +9,14 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  MenuItem,
   Switch,
   TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useActualizarCategoria, useCrearCategoria } from '../../../api/hooks/useCategorias';
-import { TIPO_LABEL_PLURAL } from '../../../types/common';
-import type { Categoria, Tipo } from '../../../types';
+import { TIPO_DEUDA_LABEL, TIPO_LABEL_PLURAL, TIPOS_DEUDA } from '../../../types/common';
+import type { Categoria, Tipo, TipoDeuda } from '../../../types';
 
 interface Props {
   open: boolean;
@@ -49,6 +50,7 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
   const [capitalPorCuota, setCapitalPorCuota] = useState(
     categoria?.capitalPorCuota != null ? String(categoria.capitalPorCuota) : '',
   );
+  const [tipoDeuda, setTipoDeuda] = useState<TipoDeuda>(categoria?.tipoDeuda ?? 'Prestamo');
   const [activo, setActivo] = useState(categoria?.activo ?? true);
 
   const guardando = crear.isPending || actualizar.isPending;
@@ -66,6 +68,7 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
       montoTotal: tipo === 'Deuda' && montoTotal !== '' ? Number(montoTotal) : null,
       capitalPorCuota:
         tipo === 'Deuda' && tieneInteres && capitalPorCuota !== '' ? Number(capitalPorCuota) : null,
+      tipoDeuda: tipo === 'Deuda' ? tipoDeuda : null,
       activo,
     };
     if (editando && categoria) {
@@ -127,6 +130,23 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
           </Box>
 
           {tipo === 'Deuda' && (
+            <TextField
+              select
+              label="Tipo de deuda"
+              value={tipoDeuda}
+              onChange={(e) => setTipoDeuda(e.target.value as TipoDeuda)}
+              size="small"
+              fullWidth
+            >
+              {TIPOS_DEUDA.map((t) => (
+                <MenuItem key={t} value={t}>
+                  {TIPO_DEUDA_LABEL[t]}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+
+          {tipo === 'Deuda' && (
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <TextField
                 label="Monto total (S/)"
@@ -138,13 +158,13 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
                 helperText="Total de la deuda."
               />
               <TextField
-                label="Cuotas restantes"
+                label="Número de cuotas (plazo)"
                 type="number"
                 value={cuotasRestantes}
                 onChange={(e) => setCuotasRestantes(e.target.value)}
                 size="small"
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
-                helperText="Opcional."
+                helperText="Total de cuotas (ej. 48)."
               />
             </Box>
           )}

@@ -6,8 +6,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   MenuItem,
+  Switch,
   TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -43,13 +45,35 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
   const [fecha, setFecha] = useState(movimiento?.fecha ?? periodo.fechaInicio);
   const [nota, setNota] = useState(movimiento?.nota ?? '');
   const [usuarioId, setUsuarioId] = useState(movimiento?.usuarioId ?? usuario?.id ?? '');
+  // Para ingresos: al elegir la categoría se auto-jala su presupuesto y el monto queda bloqueado;
+  // este switch lo libera para registrar un monto distinto (ej. recibí menos). Al editar, libre.
+  const [montoDiferente, setMontoDiferente] = useState(editando);
 
   const esSituacional = tipo === 'Situacional';
+  const esIngreso = tipo === 'Ingreso';
+  const montoBloqueado = esIngreso && !montoDiferente;
 
   const categoriasDelTipo = useMemo(
     () => categorias.filter((c) => c.tipo === tipo).sort((a, b) => a.orden - b.orden),
     [categorias, tipo],
   );
+
+  const seleccionarCategoria = (id: string) => {
+    setCategoriaId(id);
+    if (esIngreso && !montoDiferente) {
+      const cat = categorias.find((c) => c.id === id);
+      if (cat) setMonto(String(cat.presupuesto));
+    }
+  };
+
+  const cambiarMontoDiferente = (on: boolean) => {
+    setMontoDiferente(on);
+    if (!on) {
+      // Volver al monto planeado de la categoría.
+      const cat = categorias.find((c) => c.id === categoriaId);
+      if (cat) setMonto(String(cat.presupuesto));
+    }
+  };
 
   const guardando = crear.isPending || actualizar.isPending;
   const valido = esSituacional
@@ -128,7 +152,7 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
                 select
                 label="Categoría"
                 value={categoriaId}
-                onChange={(e) => setCategoriaId(e.target.value)}
+                onChange={(e) => seleccionarCategoria(e.target.value)}
                 size="small"
                 fullWidth
                 helperText={categoriasDelTipo.length === 0 ? 'No hay categorías de este tipo.' : ' '}
@@ -160,6 +184,8 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
               size="small"
               slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
               required
+              disabled={montoBloqueado}
+              helperText={montoBloqueado ? 'Monto planeado de la categoría.' : ' '}
             />
             <TextField
               label="Fecha"
@@ -171,6 +197,20 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
               required
             />
           </Box>
+
+          {esIngreso && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={montoDiferente}
+                  onChange={(e) => cambiarMontoDiferente(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Recibí un monto diferente al planeado"
+              sx={{ mt: -1, '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+            />
+          )}
 
           <TextField
             select
@@ -190,11 +230,12 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
           </TextField>
 
           <TextField
-            label="Nota (opcional)"
+            label={esIngreso && montoDiferente ? 'Motivo / nota' : 'Nota (opcional)'}
             value={nota}
             onChange={(e) => setNota(e.target.value)}
             size="small"
             fullWidth
+            placeholder={esIngreso && montoDiferente ? 'Ej. recibí menos por tardanza' : undefined}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>

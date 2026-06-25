@@ -19,6 +19,15 @@ export type EstadoMeta = (typeof ESTADOS_META)[number];
 export const ESTADOS_PERIODO = ['Borrador', 'Iniciado', 'Cerrado'] as const;
 export type EstadoPeriodo = (typeof ESTADOS_PERIODO)[number];
 
+export const TIPOS_DEUDA = ['Prestamo', 'LineaCredito'] as const;
+export type TipoDeuda = (typeof TIPOS_DEUDA)[number];
+
+/** Etiqueta legible del tipo de deuda. */
+export const TIPO_DEUDA_LABEL: Record<TipoDeuda, string> = {
+  Prestamo: 'Préstamo',
+  LineaCredito: 'Línea de crédito',
+};
+
 /** Nombres de mes (índice 0 = Enero) para mostrar; el campo `mes` del periodo es 1-12. */
 export const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

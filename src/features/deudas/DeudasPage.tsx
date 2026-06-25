@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Box, Button, Card, IconButton, LinearProgress } from '@mui/material';
+import { Box, Button, Card, Chip, IconButton, LinearProgress } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
@@ -15,6 +15,7 @@ import { MoneyText } from '../../components/ui/MoneyText';
 import { CategoriaDialog } from '../configuracion/components/CategoriaDialog';
 import { AbonoDialog } from './components/AbonoDialog';
 import { colors, tipoColors } from '../../theme/tokens';
+import { TIPO_DEUDA_LABEL } from '../../types/common';
 import type { Categoria, Deuda, Movimiento } from '../../types';
 
 function fechaCorta(iso: string): string {
@@ -85,10 +86,20 @@ export function DeudasPage() {
                     {d.emoji ?? '💳'}
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ fontSize: 15.5, fontWeight: 700 }}>{d.nombre}</Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                      <Box sx={{ fontSize: 15.5, fontWeight: 700 }}>{d.nombre}</Box>
+                      {d.tipoDeuda && (
+                        <Chip
+                          label={TIPO_DEUDA_LABEL[d.tipoDeuda]}
+                          size="small"
+                          sx={{ height: 19, fontSize: 10.5, fontWeight: 600, bgcolor: c.soft, color: c.main }}
+                        />
+                      )}
+                    </Box>
                     <Box sx={{ fontSize: 12, color: colors.textTertiary }}>
                       Cuota {money(d.cuotaMensual)} /mes
-                      {d.cuotasRestantes != null && ` · ${d.cuotasRestantes} cuotas`}
+                      {d.cuotasRestantes != null &&
+                        ` · ${d.cuotasPagadas}/${d.cuotasRestantes} cuotas · faltan ${Math.max(0, d.cuotasRestantes - d.cuotasPagadas)}`}
                     </Box>
                   </Box>
                   <IconButton
@@ -117,18 +128,22 @@ export function DeudasPage() {
                       </Box>
                       <Box sx={{ fontSize: 12, color: colors.textTertiary }}>por pagar</Box>
                     </Box>
+                    {/* Verde = capital recuperado; dorado (track) = lo que aún debes. */}
                     <LinearProgress
                       variant="determinate"
                       value={d.pct ?? 0}
-                      sx={{ height: 8, '& .MuiLinearProgress-bar': { bgcolor: c.main } }}
+                      sx={{
+                        height: 8,
+                        bgcolor: c.soft,
+                        '& .MuiLinearProgress-bar': { bgcolor: colors.positive },
+                      }}
                     />
                     <Box sx={{ fontSize: 12, color: colors.textTertiary, mt: 0.6 }}>
-                      {d.capitalPorCuota != null ? 'Capital abonado' : 'Pagado'} {money(d.totalPagado)} de{' '}
-                      {money(d.montoTotal)} ({d.pct ?? 0}%)
+                      🟢 Capital recuperado {money(d.totalPagado)} de {money(d.montoTotal)} ({d.pct ?? 0}%)
                     </Box>
                     {d.capitalPorCuota != null && (
                       <Box sx={{ fontSize: 12, color: colors.textTertiary }}>
-                        Interés pagado: {money(d.totalInteres)} · capital/cuota {money(d.capitalPorCuota)}
+                        Interés pagado: {money(d.totalInteres)} · capital/cuota referencial {money(d.capitalPorCuota)}
                       </Box>
                     )}
                   </>

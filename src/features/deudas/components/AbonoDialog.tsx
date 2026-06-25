@@ -64,6 +64,8 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
       monto: montoNum,
       // Solo deudas con interés guardan el desglose; el resto, null (todo baja el saldo).
       montoCapital: tieneInteres ? capitalReduce : null,
+      // Cuota regular cuenta como cuota; abono extra a capital no.
+      esCuota: modo === 'regular',
       nota: descripcion,
     });
     onClose();
