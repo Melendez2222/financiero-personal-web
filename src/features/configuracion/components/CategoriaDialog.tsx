@@ -171,7 +171,7 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
                   size="small"
                   fullWidth
                   slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
-                  helperText="De cada cuota, esto baja la deuda; el resto es interés."
+                  helperText="Valor referencial; lo podrás ajustar en cada abono."
                 />
               )}
             </Box>

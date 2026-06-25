@@ -30,17 +30,19 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
   const { money } = useSettings();
   const tieneInteres = deuda.capitalPorCuota != null;
 
+  const capitalDefault = deuda.capitalPorCuota != null ? String(deuda.capitalPorCuota) : '';
   const [modo, setModo] = useState<'regular' | 'extra'>('regular');
   const [monto, setMonto] = useState(tieneInteres ? String(deuda.cuotaMensual) : '');
+  const [capital, setCapital] = useState(capitalDefault);
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(periodo.fechaInicio);
 
   const montoNum = Number(monto) || 0;
-  // Capital que reduce la deuda: en cuota regular es el fijo configurado (tope = monto);
-  // en abono extra (o deuda sin interés) es el monto completo.
+  // Capital que reduce la deuda: en cuota regular es el valor que el usuario ingresa para ESE mes
+  // (la amortización lo cambia mes a mes); en abono extra (o deuda sin interés) es el monto completo.
   const capitalReduce =
     tieneInteres && modo === 'regular'
-      ? Math.min(montoNum, deuda.capitalPorCuota ?? montoNum)
+      ? Math.min(Math.max(0, Number(capital) || 0), montoNum)
       : montoNum;
   const interesMonto = Math.max(0, montoNum - capitalReduce);
   const valido = montoNum > 0 && !!fecha;
@@ -48,6 +50,7 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
   const cambiarModo = (m: 'regular' | 'extra') => {
     setModo(m);
     setMonto(m === 'regular' ? String(deuda.cuotaMensual) : '');
+    setCapital(m === 'regular' ? capitalDefault : '');
   };
 
   const enviar = async (e: FormEvent) => {
@@ -114,6 +117,20 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
               required
             />
           </Box>
+
+          {tieneInteres && modo === 'regular' && (
+            <TextField
+              label="Capital de esta cuota (S/)"
+              type="number"
+              value={capital}
+              onChange={(e) => setCapital(e.target.value)}
+              size="small"
+              fullWidth
+              slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+              helperText="Lo que de esta cuota baja la deuda (mira tu estado de cuenta); el resto es interés."
+            />
+          )}
+
           <TextField
             label="Descripción"
             value={descripcion}

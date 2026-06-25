@@ -32,19 +32,25 @@ export function PeriodoProvider({ children }: { children: ReactNode }) {
   const anioActual = hoy.getFullYear();
   const mesActual = hoy.getMonth() + 1;
 
-  // Si el mes de hoy no existe, se crea + inicia automáticamente (una sola vez por mes).
+  // El mes en curso queda siempre creado e Iniciado automáticamente (una sola vez por mes):
+  // si no existe se crea+inicia; si existe en Borrador se inicia; si ya está Iniciado/Cerrado no se toca.
   useEffect(() => {
     if (isLoading) return;
     const key = `${anioActual}-${mesActual}`;
     if (intentoRef.current === key) return;
-    const existe = periodos.some((p) => p.anio === anioActual && p.mes === mesActual);
-    if (existe) return;
+    const actual = periodos.find((p) => p.anio === anioActual && p.mes === mesActual);
+    if (actual && actual.estado !== 'Borrador') return;
     intentoRef.current = key;
     void (async () => {
       try {
-        const nuevo = await crear.mutateAsync({ anio: anioActual, mes: mesActual, heredarBalance: true });
-        await iniciar.mutateAsync(nuevo.id);
-        setSeleccionId(nuevo.id);
+        if (!actual) {
+          const nuevo = await crear.mutateAsync({ anio: anioActual, mes: mesActual, heredarBalance: true });
+          await iniciar.mutateAsync(nuevo.id);
+          setSeleccionId(nuevo.id);
+        } else {
+          await iniciar.mutateAsync(actual.id);
+          setSeleccionId(actual.id);
+        }
       } catch {
         // Si falló (p.ej. carrera: ya existía), no se reintenta; el memo seleccionará el actual al refrescar.
       }
