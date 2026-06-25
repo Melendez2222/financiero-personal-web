@@ -7,17 +7,20 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   MenuItem,
   Switch,
   TextField,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import { SectionCard } from '../../../components/ui/SectionCard';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { usePeriodoActivo } from '../../../context/PeriodoContext';
-import { useCrearPeriodo, useIniciarPeriodo } from '../../../api/hooks/usePeriodos';
+import { useCrearPeriodo, useEliminarPeriodo, useIniciarPeriodo } from '../../../api/hooks/usePeriodos';
 import { MESES } from '../../../types/common';
 import { colors } from '../../../theme/tokens';
-import type { EstadoPeriodo } from '../../../types';
+import type { EstadoPeriodo, Periodo } from '../../../types';
 
 const ESTADO_COLOR: Record<EstadoPeriodo, { fg: string; bg: string }> = {
   Borrador: { fg: colors.deuda, bg: colors.deudaSoft },
@@ -29,12 +32,15 @@ export function PeriodoManager() {
   const { periodos, setPeriodoId } = usePeriodoActivo();
   const crear = useCrearPeriodo();
   const iniciar = useIniciarPeriodo();
+  const eliminar = useEliminarPeriodo();
 
   const [dialogo, setDialogo] = useState(false);
   const [anio, setAnio] = useState(2026);
   const [mes, setMes] = useState(7);
   const [heredar, setHeredar] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aEliminar, setAEliminar] = useState<Periodo | null>(null);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
   const crearMes = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,6 +104,9 @@ export function PeriodoManager() {
                   Iniciar
                 </Button>
               )}
+              <IconButton size="small" onClick={() => setAEliminar(p)} sx={{ color: colors.negative }}>
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
             </Box>
           );
         })}
@@ -140,6 +149,32 @@ export function PeriodoManager() {
           </DialogActions>
         </Box>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!aEliminar}
+        title="Eliminar mes"
+        message={
+          errorEliminar ??
+          `¿Eliminar "${aEliminar ? `${MESES[aEliminar.mes - 1]} ${aEliminar.anio}` : ''}"? Si tiene movimientos no se podrá borrar.`
+        }
+        loading={eliminar.isPending}
+        onClose={() => {
+          setAEliminar(null);
+          setErrorEliminar(null);
+        }}
+        onConfirm={async () => {
+          if (!aEliminar) return;
+          try {
+            await eliminar.mutateAsync(aEliminar.id);
+            setAEliminar(null);
+          } catch (err: unknown) {
+            const msg =
+              (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+              'No se pudo eliminar.';
+            setErrorEliminar(msg);
+          }
+        }}
+      />
     </SectionCard>
   );
 }

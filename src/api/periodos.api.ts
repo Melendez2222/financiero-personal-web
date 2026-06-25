@@ -18,4 +18,5 @@ export const periodosApi = {
     apiClient.post<Periodo>(endpoints.periodoIniciar(id), {}).then((r) => r.data),
   resumen: (id: string) =>
     apiClient.get<ResumenPeriodo>(endpoints.periodoResumen(id)).then((r) => r.data),
+  remove: (id: string) => apiClient.delete<void>(endpoints.periodo(id)).then((r) => r.data),
 };

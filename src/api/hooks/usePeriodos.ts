@@ -47,3 +47,11 @@ export function useActualizarPeriodo() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['periodos'] }),
   });
 }
+
+export function useEliminarPeriodo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => periodosApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['periodos'] }),
+  });
+}

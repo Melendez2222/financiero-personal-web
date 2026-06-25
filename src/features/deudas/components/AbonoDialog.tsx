@@ -6,7 +6,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
+  Radio,
+  RadioGroup,
   TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -25,11 +28,27 @@ interface Props {
 export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
   const crear = useCrearMovimiento();
   const { money } = useSettings();
-  const [monto, setMonto] = useState('');
+  const tieneInteres = deuda.capitalPorCuota != null;
+
+  const [modo, setModo] = useState<'regular' | 'extra'>('regular');
+  const [monto, setMonto] = useState(tieneInteres ? String(deuda.cuotaMensual) : '');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(periodo.fechaInicio);
 
-  const valido = Number(monto) > 0 && !!fecha;
+  const montoNum = Number(monto) || 0;
+  // Capital que reduce la deuda: en cuota regular es el fijo configurado (tope = monto);
+  // en abono extra (o deuda sin interés) es el monto completo.
+  const capitalReduce =
+    tieneInteres && modo === 'regular'
+      ? Math.min(montoNum, deuda.capitalPorCuota ?? montoNum)
+      : montoNum;
+  const interesMonto = Math.max(0, montoNum - capitalReduce);
+  const valido = montoNum > 0 && !!fecha;
+
+  const cambiarModo = (m: 'regular' | 'extra') => {
+    setModo(m);
+    setMonto(m === 'regular' ? String(deuda.cuotaMensual) : '');
+  };
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,7 +58,9 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
       categoriaId: deuda.id,
       tipo: 'Deuda',
       fecha,
-      monto: Number(monto),
+      monto: montoNum,
+      // Solo deudas con interés guardan el desglose; el resto, null (todo baja el saldo).
+      montoCapital: tieneInteres ? capitalReduce : null,
       nota: descripcion,
     });
     onClose();
@@ -59,6 +80,19 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
             {deuda.emoji} <strong>{deuda.nombre}</strong>
             {deuda.saldoRestante != null && <> · queda {money(deuda.saldoRestante)}</>}
           </Box>
+
+          {tieneInteres && (
+            <RadioGroup
+              row
+              value={modo}
+              onChange={(e) => cambiarModo(e.target.value as 'regular' | 'extra')}
+              sx={{ gap: 1, '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+            >
+              <FormControlLabel value="regular" control={<Radio size="small" />} label="Cuota regular" />
+              <FormControlLabel value="extra" control={<Radio size="small" />} label="Abono extra a capital" />
+            </RadioGroup>
+          )}
+
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <TextField
               label="Monto (S/)"
@@ -88,9 +122,17 @@ export function AbonoDialog({ open, onClose, deuda, periodo }: Props) {
             fullWidth
             placeholder="Ej. abono extra con gratificación"
           />
-          {deuda.saldoRestante != null && Number(monto) > 0 && (
+
+          {tieneInteres && montoNum > 0 && (
             <Box sx={{ fontSize: 13, color: colors.textSecondary }}>
-              Quedaría: <strong>{money(Math.max(0, deuda.saldoRestante - Number(monto)))}</strong>
+              Capital: <strong>{money(capitalReduce)}</strong> · Interés:{' '}
+              <strong>{money(interesMonto)}</strong>
+            </Box>
+          )}
+          {deuda.saldoRestante != null && montoNum > 0 && (
+            <Box sx={{ fontSize: 13, color: colors.textSecondary }}>
+              La deuda bajaría a:{' '}
+              <strong>{money(Math.max(0, deuda.saldoRestante - capitalReduce))}</strong>
             </Box>
           )}
         </DialogContent>

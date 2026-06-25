@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -44,6 +45,10 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
   const [montoTotal, setMontoTotal] = useState(
     categoria?.montoTotal != null ? String(categoria.montoTotal) : '',
   );
+  const [tieneInteres, setTieneInteres] = useState(categoria?.capitalPorCuota != null);
+  const [capitalPorCuota, setCapitalPorCuota] = useState(
+    categoria?.capitalPorCuota != null ? String(categoria.capitalPorCuota) : '',
+  );
   const [activo, setActivo] = useState(categoria?.activo ?? true);
 
   const guardando = crear.isPending || actualizar.isPending;
@@ -59,6 +64,8 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
       fechaVencimiento: fechaVencimiento || undefined,
       cuotasRestantes: tipo === 'Deuda' && cuotasRestantes !== '' ? Number(cuotasRestantes) : null,
       montoTotal: tipo === 'Deuda' && montoTotal !== '' ? Number(montoTotal) : null,
+      capitalPorCuota:
+        tipo === 'Deuda' && tieneInteres && capitalPorCuota !== '' ? Number(capitalPorCuota) : null,
       activo,
     };
     if (editando && categoria) {
@@ -139,6 +146,34 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
                 helperText="Opcional."
               />
+            </Box>
+          )}
+
+          {tipo === 'Deuda' && (
+            <Box>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={tieneInteres}
+                    onChange={(e) => setTieneInteres(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label="Esta deuda tiene interés (cuota con parte fija a capital)"
+                sx={{ '& .MuiFormControlLabel-label': { fontSize: 13.5 } }}
+              />
+              {tieneInteres && (
+                <TextField
+                  label="Capital por cuota (S/)"
+                  type="number"
+                  value={capitalPorCuota}
+                  onChange={(e) => setCapitalPorCuota(e.target.value)}
+                  size="small"
+                  fullWidth
+                  slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                  helperText="De cada cuota, esto baja la deuda; el resto es interés."
+                />
+              )}
             </Box>
           )}
 

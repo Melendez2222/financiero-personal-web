@@ -1,5 +1,13 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { usePeriodos } from '../api/hooks/usePeriodos';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { useCrearPeriodo, useIniciarPeriodo, usePeriodos } from '../api/hooks/usePeriodos';
 import type { Periodo } from '../types';
 
 interface PeriodoContextValue {
@@ -15,15 +23,43 @@ const PeriodoContext = createContext<PeriodoContextValue | null>(null);
 export function PeriodoProvider({ children }: { children: ReactNode }) {
   const { data: periodos = [], isLoading } = usePeriodos();
   const [seleccionId, setSeleccionId] = useState<string | null>(null);
+  const crear = useCrearPeriodo();
+  const iniciar = useIniciarPeriodo();
+  const intentoRef = useRef<string | null>(null);
 
-  // El activo es el seleccionado, o el más reciente (la lista viene ordenada desc).
+  // Mes en curso según la fecha real (se resuelve en el cliente, sin cron ni backend).
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const mesActual = hoy.getMonth() + 1;
+
+  // Si el mes de hoy no existe, se crea + inicia automáticamente (una sola vez por mes).
+  useEffect(() => {
+    if (isLoading) return;
+    const key = `${anioActual}-${mesActual}`;
+    if (intentoRef.current === key) return;
+    const existe = periodos.some((p) => p.anio === anioActual && p.mes === mesActual);
+    if (existe) return;
+    intentoRef.current = key;
+    void (async () => {
+      try {
+        const nuevo = await crear.mutateAsync({ anio: anioActual, mes: mesActual, heredarBalance: true });
+        await iniciar.mutateAsync(nuevo.id);
+        setSeleccionId(nuevo.id);
+      } catch {
+        // Si falló (p.ej. carrera: ya existía), no se reintenta; el memo seleccionará el actual al refrescar.
+      }
+    })();
+  }, [isLoading, periodos, anioActual, mesActual, crear, iniciar]);
+
+  // El activo es: el seleccionado por el usuario → el mes en curso → el más reciente.
   const periodoActivo = useMemo(() => {
     if (seleccionId) {
       const match = periodos.find((p) => p.id === seleccionId);
       if (match) return match;
     }
-    return periodos[0] ?? null;
-  }, [periodos, seleccionId]);
+    const actual = periodos.find((p) => p.anio === anioActual && p.mes === mesActual);
+    return actual ?? periodos[0] ?? null;
+  }, [periodos, seleccionId, anioActual, mesActual]);
 
   const value = useMemo<PeriodoContextValue>(
     () => ({

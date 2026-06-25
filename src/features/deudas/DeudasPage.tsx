@@ -123,8 +123,14 @@ export function DeudasPage() {
                       sx={{ height: 8, '& .MuiLinearProgress-bar': { bgcolor: c.main } }}
                     />
                     <Box sx={{ fontSize: 12, color: colors.textTertiary, mt: 0.6 }}>
-                      Pagado {money(d.totalPagado)} de {money(d.montoTotal)} ({d.pct ?? 0}%)
+                      {d.capitalPorCuota != null ? 'Capital abonado' : 'Pagado'} {money(d.totalPagado)} de{' '}
+                      {money(d.montoTotal)} ({d.pct ?? 0}%)
                     </Box>
+                    {d.capitalPorCuota != null && (
+                      <Box sx={{ fontSize: 12, color: colors.textTertiary }}>
+                        Interés pagado: {money(d.totalInteres)} · capital/cuota {money(d.capitalPorCuota)}
+                      </Box>
+                    )}
                   </>
                 ) : (
                   <Box sx={{ fontSize: 12.5, color: colors.textTertiary }}>

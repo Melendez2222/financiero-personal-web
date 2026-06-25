@@ -13,6 +13,8 @@ export interface Movimiento {
   usuarioId?: string | null;
   fecha: string; // ISO yyyy-mm-dd
   monto: number; // siempre positivo; el signo se deriva del tipo en la UI
+  /** Solo abonos a deuda: porción del abono que reduce el capital. Null = todo el monto es capital. */
+  montoCapital?: number | null;
   nota: string;
 }
 
@@ -24,6 +26,7 @@ export interface CrearMovimientoRequest {
   usuarioId?: string | null;
   fecha: string;
   monto: number;
+  montoCapital?: number | null;
   nota?: string;
 }
 
