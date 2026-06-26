@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { usePeriodoActivo } from '../../context/PeriodoContext';
@@ -18,9 +18,11 @@ interface Props {
   tiposPermitidos: Tipo[];
   mostrarTipo: boolean;
   textoNuevo: string;
+  /** Si se provee, reemplaza el botón por defecto de "nuevo" (p.ej. el modal de registro rápido). */
+  accionNueva?: ReactNode;
 }
 
-export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo }: Props) {
+export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accionNueva }: Props) {
   const { periodos, periodoActivo } = usePeriodoActivo();
   const { data: categorias = [] } = useCategorias();
   const { data: usuarios = [] } = useUsuarios();
@@ -72,9 +74,11 @@ export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo }: Prop
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={abrirNuevo}>
-          {textoNuevo}
-        </Button>
+        {accionNueva ?? (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={abrirNuevo}>
+            {textoNuevo}
+          </Button>
+        )}
       </Box>
 
       <FiltrosBar

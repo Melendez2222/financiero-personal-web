@@ -23,12 +23,14 @@ export function PanelMesPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <CartillaIngresos />
+      </Box>
+
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
         <FlujoResumen flujo={resumen.flujo} titulo={titulo} />
         <PresupuestoVsActual secciones={resumen.secciones} />
       </Box>
-
-      <CartillaIngresos />
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
         {resumen.secciones.map((s) => (

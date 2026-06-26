@@ -1,12 +1,22 @@
 import { useMemo, useState } from 'react';
-import { Box, Button, IconButton } from '@mui/material';
-import RemoveIcon from '@mui/icons-material/Remove';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import { Link as RouterLink } from 'react-router-dom';
 import { useCategorias } from '../../../api/hooks/useCategorias';
 import { useMovimientos, useCrearMovimiento } from '../../../api/hooks/useMovimientos';
 import { useUsuarios } from '../../../api/hooks/useUsuarios';
 import { usePeriodoActivo } from '../../../context/PeriodoContext';
-import { SectionCard } from '../../../components/ui/SectionCard';
 import { MoneyText } from '../../../components/ui/MoneyText';
+import { EmptyState } from '../../../components/ui/EmptyState';
 import { colors, radii } from '../../../theme/tokens';
 
 /** Fecha de hoy acotada al periodo (yyyy-mm-dd); si hoy cae fuera, usa el inicio del mes. */
@@ -16,10 +26,10 @@ function fechaDestino(fechaInicio: string, fechaFin: string): string {
 }
 
 /**
- * Cartilla de registro rápido de ingresos fijos. Cada tarjeta es la superficie seleccionable
- * (sin checkbox ni botón por tarjeta): cada toque suma una ocurrencia (×1, ×2…) — útil porque una
- * quincena se cobra varias veces al mes —, y un único "Guardar" registra todo de una vez en el mes
- * activo, atribuido a la persona por defecto de cada categoría.
+ * Registro rápido de ingresos fijos por MODAL. Un botón "Registrar ingreso" abre un diálogo con una
+ * tarjeta por ingreso fijo ACTIVO que aún NO se ha registrado este mes; la tarjeta entera es la
+ * superficie seleccionable (sin checkbox ni botón). Un único "Guardar" crea un movimiento por cada
+ * tarjeta seleccionada, atribuido a la persona por defecto de la categoría.
  */
 export function CartillaIngresos() {
   const { periodoActivo } = usePeriodoActivo();
@@ -31,45 +41,54 @@ export function CartillaIngresos() {
   });
   const crear = useCrearMovimiento();
 
-  const [sel, setSel] = useState<Record<string, number>>({});
+  const [open, setOpen] = useState(false);
+  const [sel, setSel] = useState<Set<string>>(new Set());
   const [guardando, setGuardando] = useState(false);
 
-  const ingresos = useMemo(
-    () => categorias.filter((c) => c.tipo === 'Ingreso' && c.activo).sort((a, b) => a.orden - b.orden),
-    [categorias],
+  // Categorías con al menos un movimiento de ingreso este mes (ya registradas → se ocultan).
+  const yaRegistradas = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of movimientos) if (m.categoriaId) s.add(m.categoriaId);
+    return s;
+  }, [movimientos]);
+
+  // Opciones del modal: ingresos activos que aún no se registraron este mes.
+  const opciones = useMemo(
+    () =>
+      categorias
+        .filter((c) => c.tipo === 'Ingreso' && c.activo && !yaRegistradas.has(c.id))
+        .sort((a, b) => a.orden - b.orden),
+    [categorias, yaRegistradas],
   );
 
-  const yaRegistrado = useMemo(() => {
-    const acc: Record<string, number> = {};
-    for (const m of movimientos) {
-      if (m.categoriaId) acc[m.categoriaId] = (acc[m.categoriaId] ?? 0) + 1;
-    }
-    return acc;
-  }, [movimientos]);
+  const hayIngresosActivos = categorias.some((c) => c.tipo === 'Ingreso' && c.activo);
 
   const nombrePersona = (usuarioId?: string | null) =>
     usuarioId ? usuarios.find((u) => u.id === usuarioId)?.nombre : undefined;
 
-  const sumar = (id: string) => setSel((s) => ({ ...s, [id]: (s[id] ?? 0) + 1 }));
-  const restar = (id: string) =>
+  const alternar = (id: string) =>
     setSel((s) => {
-      const n = (s[id] ?? 0) - 1;
-      const next = { ...s };
-      if (n <= 0) delete next[id];
-      else next[id] = n;
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
 
-  const totalCount = Object.values(sel).reduce((a, b) => a + b, 0);
-  const totalMonto = ingresos.reduce((sum, c) => sum + (sel[c.id] ?? 0) * c.presupuesto, 0);
+  const cerrar = () => {
+    setOpen(false);
+    setSel(new Set());
+  };
+
+  const seleccionadas = opciones.filter((c) => sel.has(c.id));
+  const totalMonto = seleccionadas.reduce((sum, c) => sum + c.presupuesto, 0);
 
   const guardar = async () => {
-    if (!periodoActivo || totalCount === 0) return;
+    if (!periodoActivo || seleccionadas.length === 0) return;
     const fecha = fechaDestino(periodoActivo.fechaInicio, periodoActivo.fechaFin);
     setGuardando(true);
     try {
-      const peticiones = ingresos.flatMap((c) =>
-        Array.from({ length: sel[c.id] ?? 0 }, () =>
+      await Promise.all(
+        seleccionadas.map((c) =>
           crear.mutateAsync({
             periodoId: periodoActivo.id,
             tipo: 'Ingreso' as const,
@@ -81,162 +100,115 @@ export function CartillaIngresos() {
           }),
         ),
       );
-      await Promise.all(peticiones);
-      setSel({});
+      cerrar();
     } finally {
       setGuardando(false);
     }
   };
 
-  if (!periodoActivo || ingresos.length === 0) return null;
+  if (!periodoActivo) return null;
 
   return (
-    <SectionCard
-      title="Registro rápido de ingresos"
-      subtitle="Toca un ingreso para registrarlo; tócalo de nuevo si lo recibiste más de una vez este mes."
-      accent={colors.ingreso}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
-            gap: 1.5,
-          }}
-        >
-          {ingresos.map((c) => {
-            const count = sel[c.id] ?? 0;
-            const seleccionada = count > 0;
-            const persona = nombrePersona(c.usuarioId);
-            const previos = yaRegistrado[c.id] ?? 0;
-            return (
+    <>
+      <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>
+        Registrar ingreso
+      </Button>
+
+      <Dialog open={open} onClose={cerrar} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
+          Registrar ingreso
+          <IconButton onClick={cerrar} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
+          {!hayIngresosActivos ? (
+            <EmptyState>
+              No tienes ingresos fijos.{' '}
               <Box
-                key={c.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => sumar(c.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    sumar(c.id);
-                  }
-                }}
-                sx={{
-                  position: 'relative',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  p: 1.75,
-                  borderRadius: `${radii.input}px`,
-                  border: `1.5px solid ${seleccionada ? colors.ingreso : colors.border}`,
-                  bgcolor: seleccionada ? colors.ingresoSoft : colors.surface,
-                  transition: 'border-color .12s, background-color .12s',
-                  '&:hover': { borderColor: colors.ingreso },
-                  '&:focus-visible': { outline: `2px solid ${colors.ingreso}`, outlineOffset: 2 },
-                }}
+                component={RouterLink}
+                to="/configuracion"
+                onClick={cerrar}
+                sx={{ color: colors.ingreso, fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
               >
-                {seleccionada && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.25,
-                    }}
-                  >
-                    <IconButton
-                      size="small"
-                      aria-label="Quitar uno"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        restar(c.id);
-                      }}
-                      sx={{ width: 22, height: 22, bgcolor: colors.surface, border: `1px solid ${colors.ingreso}`, color: colors.ingreso, '&:hover': { bgcolor: colors.ingresoSoft } }}
-                    >
-                      <RemoveIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                    <Box
-                      sx={{
-                        minWidth: 26,
-                        textAlign: 'center',
-                        px: 0.5,
-                        py: '1px',
-                        borderRadius: `${radii.pill}px`,
-                        bgcolor: colors.ingreso,
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      ×{count}
-                    </Box>
-                  </Box>
-                )}
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pr: seleccionada ? 6 : 0 }}>
-                  {c.emoji && <Box component="span" sx={{ fontSize: 18 }}>{c.emoji}</Box>}
-                  <Box
-                    sx={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: colors.textPrimary,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {c.nombre}
-                  </Box>
-                </Box>
-
-                <Box sx={{ mt: 0.75 }}>
-                  <MoneyText value={c.presupuesto} color={colors.ingreso} size={16} />
-                </Box>
-
-                <Box sx={{ mt: 0.5, fontSize: 11.5, color: colors.textTertiary, minHeight: 16 }}>
-                  {persona ? persona : 'Sin persona asignada'}
-                  {c.fechaVencimiento ? ` · vence ${c.fechaVencimiento}` : ''}
-                </Box>
-
-                {previos > 0 && (
-                  <Box sx={{ mt: 0.25, fontSize: 11, color: colors.ingreso, fontWeight: 600 }}>
-                    Ya registrado ×{previos} este mes
-                  </Box>
-                )}
+                Créalos en el catálogo →
               </Box>
-            );
-          })}
-        </Box>
-
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 2,
-            flexWrap: 'wrap',
-          }}
-        >
+            </EmptyState>
+          ) : opciones.length === 0 ? (
+            <EmptyState>Ya registraste todos tus ingresos fijos de este mes. 🎉</EmptyState>
+          ) : (
+            <>
+              <Box sx={{ fontSize: 12.5, color: colors.textTertiary }}>
+                Toca los ingresos que recibiste este mes y guarda.
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {opciones.map((c) => {
+                  const seleccionada = sel.has(c.id);
+                  const persona = nombrePersona(c.usuarioId);
+                  return (
+                    <Box
+                      key={c.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => alternar(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          alternar(c.id);
+                        }
+                      }}
+                      sx={{
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.25,
+                        p: 1.5,
+                        borderRadius: `${radii.input}px`,
+                        border: `1.5px solid ${seleccionada ? colors.ingreso : colors.border}`,
+                        bgcolor: seleccionada ? colors.ingresoSoft : colors.surface,
+                        transition: 'border-color .12s, background-color .12s',
+                        '&:hover': { borderColor: colors.ingreso },
+                        '&:focus-visible': { outline: `2px solid ${colors.ingreso}`, outlineOffset: 2 },
+                      }}
+                    >
+                      {c.emoji && <Box component="span" sx={{ fontSize: 20 }}>{c.emoji}</Box>}
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Box sx={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {c.nombre}
+                        </Box>
+                        <Box sx={{ fontSize: 11.5, color: colors.textTertiary }}>
+                          {persona ?? 'Sin persona asignada'}
+                          {c.fechaVencimiento ? ` · vence ${c.fechaVencimiento}` : ''}
+                        </Box>
+                      </Box>
+                      <MoneyText value={c.presupuesto} color={seleccionada ? colors.ingreso : colors.textSecondary} size={15} />
+                    </Box>
+                  );
+                })}
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, justifyContent: 'space-between' }}>
           <Box sx={{ fontSize: 13, color: colors.textSecondary }}>
-            {totalCount === 0 ? (
-              'Selecciona los ingresos recibidos este mes.'
-            ) : (
+            {seleccionadas.length > 0 && (
               <>
-                Vas a registrar <b>{totalCount}</b> {totalCount === 1 ? 'ingreso' : 'ingresos'} ·{' '}
+                {seleccionadas.length} {seleccionadas.length === 1 ? 'ingreso' : 'ingresos'} ·{' '}
                 <MoneyText value={totalMonto} color={colors.ingreso} weight={700} />
               </>
             )}
           </Box>
-          <Button
-            variant="contained"
-            onClick={guardar}
-            disabled={totalCount === 0 || guardando}
-          >
-            {guardando ? 'Guardando…' : 'Guardar'}
-          </Button>
-        </Box>
-      </Box>
-    </SectionCard>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button onClick={cerrar} color="inherit">
+              Cancelar
+            </Button>
+            <Button variant="contained" onClick={guardar} disabled={seleccionadas.length === 0 || guardando}>
+              {guardando ? 'Guardando…' : 'Guardar'}
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
