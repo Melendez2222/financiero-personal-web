@@ -14,6 +14,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { MoneyText } from '../../components/ui/MoneyText';
 import { CategoriaDialog } from '../configuracion/components/CategoriaDialog';
 import { AbonoDialog } from './components/AbonoDialog';
+import { AbonosHistorialDialog } from './components/AbonosHistorialDialog';
 import { colors, tipoColors } from '../../theme/tokens';
 import { TIPO_DEUDA_LABEL } from '../../types/common';
 import type { Categoria, Deuda, Movimiento } from '../../types';
@@ -34,6 +35,7 @@ export function DeudasPage() {
   const [dialogo, setDialogo] = useState(false);
   const [editando, setEditando] = useState<Categoria | null>(null);
   const [abono, setAbono] = useState<Deuda | null>(null);
+  const [historial, setHistorial] = useState<Deuda | null>(null);
   const [aEliminar, setAEliminar] = useState<Deuda | null>(null);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
@@ -153,7 +155,7 @@ export function DeudasPage() {
                   </Box>
                 )}
 
-                <Box sx={{ mt: 1.5 }}>
+                <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   <Button
                     size="small"
                     variant="outlined"
@@ -163,6 +165,11 @@ export function DeudasPage() {
                   >
                     Registrar abono
                   </Button>
+                  {abonosDeuda.length > 0 && (
+                    <Button size="small" variant="text" onClick={() => setHistorial(d)} sx={{ color: c.main }}>
+                      Ver historial completo
+                    </Button>
+                  )}
                 </Box>
 
                 {abonosDeuda.length > 0 && (
@@ -170,15 +177,38 @@ export function DeudasPage() {
                     <Box sx={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.textTertiary, mb: 0.5 }}>
                       Pagos / abonos
                     </Box>
-                    {abonosDeuda.slice(0, 5).map((mv) => (
-                      <Box key={mv.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.4, fontSize: 13 }}>
-                        <Box sx={{ color: colors.textTertiary, width: 44 }}>{fechaCorta(mv.fecha)}</Box>
-                        <Box sx={{ flex: 1, minWidth: 0, color: colors.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {mv.nota || '—'}
-                        </Box>
-                        <MoneyText value={mv.monto} weight={600} />
-                      </Box>
-                    ))}
+                    <Box sx={{ maxHeight: 168, overflowY: 'auto', pr: 0.5 }}>
+                      {abonosDeuda.map((mv) => {
+                        const cap = mv.montoCapital ?? mv.monto;
+                        const intr = Math.max(0, mv.monto - cap);
+                        const conInteres = d.capitalPorCuota != null;
+                        return (
+                          <Box key={mv.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, fontSize: 13 }}>
+                            <Box sx={{ color: colors.textTertiary, width: 44 }}>{fechaCorta(mv.fecha)}</Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                {conInteres && (
+                                  <Chip
+                                    label={mv.esCuota === false ? 'Extra' : 'Cuota'}
+                                    size="small"
+                                    sx={{ height: 16, fontSize: 9.5, fontWeight: 600, bgcolor: c.soft, color: c.main }}
+                                  />
+                                )}
+                                <Box sx={{ color: colors.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {mv.nota || '—'}
+                                </Box>
+                              </Box>
+                              {conInteres && (
+                                <Box sx={{ fontSize: 11, color: colors.textTertiary }}>
+                                  cap {money(cap)} · int {money(intr)}
+                                </Box>
+                              )}
+                            </Box>
+                            <MoneyText value={mv.monto} weight={600} />
+                          </Box>
+                        );
+                      })}
+                    </Box>
                   </Box>
                 )}
               </Card>
@@ -193,6 +223,16 @@ export function DeudasPage() {
 
       {abono && periodoActivo && (
         <AbonoDialog open={!!abono} onClose={() => setAbono(null)} deuda={abono} periodo={periodoActivo} />
+      )}
+
+      {historial && (
+        <AbonosHistorialDialog
+          open={!!historial}
+          onClose={() => setHistorial(null)}
+          deuda={historial}
+          abonos={movsPorCat.get(historial.id) ?? []}
+          periodo={periodoActivo}
+        />
       )}
 
       <ConfirmDialog
