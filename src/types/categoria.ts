@@ -17,6 +17,8 @@ export interface Categoria {
   capitalPorCuota?: number | null;
   /** Solo deudas: etiqueta del tipo (préstamo / línea de crédito). */
   tipoDeuda?: TipoDeuda | null;
+  /** Solo ingresos: persona por defecto a la que se atribuye al registrar (ej. de quién es la quincena). */
+  usuarioId?: string | null;
   /** Activador: si está activa, se aplica a los periodos que se inicien de aquí en adelante. */
   activo: boolean;
   /** Orden de presentación dentro de su grupo. */
@@ -33,6 +35,7 @@ export interface CrearCategoriaRequest {
   montoTotal?: number | null;
   capitalPorCuota?: number | null;
   tipoDeuda?: TipoDeuda | null;
+  usuarioId?: string | null;
   activo?: boolean;
 }
 

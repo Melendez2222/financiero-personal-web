@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useActualizarCategoria, useCrearCategoria } from '../../../api/hooks/useCategorias';
+import { useUsuarios } from '../../../api/hooks/useUsuarios';
 import { TIPO_DEUDA_LABEL, TIPO_LABEL_PLURAL, TIPOS_DEUDA } from '../../../types/common';
 import type { Categoria, Tipo, TipoDeuda } from '../../../types';
 
@@ -35,6 +36,7 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
   const editando = !!categoria;
   const crear = useCrearCategoria();
   const actualizar = useActualizarCategoria();
+  const { data: usuarios = [] } = useUsuarios();
 
   const [nombre, setNombre] = useState(categoria?.nombre ?? '');
   const [presupuesto, setPresupuesto] = useState(categoria ? String(categoria.presupuesto) : '');
@@ -51,6 +53,7 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
     categoria?.capitalPorCuota != null ? String(categoria.capitalPorCuota) : '',
   );
   const [tipoDeuda, setTipoDeuda] = useState<TipoDeuda>(categoria?.tipoDeuda ?? 'Prestamo');
+  const [usuarioId, setUsuarioId] = useState(categoria?.usuarioId ?? '');
   const [activo, setActivo] = useState(categoria?.activo ?? true);
 
   const guardando = crear.isPending || actualizar.isPending;
@@ -69,6 +72,7 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
       capitalPorCuota:
         tipo === 'Deuda' && tieneInteres && capitalPorCuota !== '' ? Number(capitalPorCuota) : null,
       tipoDeuda: tipo === 'Deuda' ? tipoDeuda : null,
+      usuarioId: usuarioId || null,
       activo,
     };
     if (editando && categoria) {
@@ -196,6 +200,23 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
               )}
             </Box>
           )}
+
+          <TextField
+            select
+            label="Persona por defecto"
+            value={usuarioId}
+            onChange={(e) => setUsuarioId(e.target.value)}
+            size="small"
+            fullWidth
+            helperText="A quién se atribuye al registrar movimientos de esta categoría. Opcional."
+          >
+            <MenuItem value="">— sin asignar —</MenuItem>
+            {usuarios.map((u) => (
+              <MenuItem key={u.id} value={u.id}>
+                {u.nombre}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <FormControlLabel
             control={<Switch checked={activo} onChange={(e) => setActivo(e.target.checked)} />}

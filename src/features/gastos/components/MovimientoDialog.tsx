@@ -60,10 +60,10 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
 
   const seleccionarCategoria = (id: string) => {
     setCategoriaId(id);
-    if (esIngreso && !montoDiferente) {
-      const cat = categorias.find((c) => c.id === id);
-      if (cat) setMonto(String(cat.presupuesto));
-    }
+    const cat = categorias.find((c) => c.id === id);
+    if (esIngreso && !montoDiferente && cat) setMonto(String(cat.presupuesto));
+    // Al crear, prefija la persona desde la categoría (respaldo: usuario en sesión).
+    if (!editando && cat) setUsuarioId(cat.usuarioId ?? usuario?.id ?? '');
   };
 
   const cambiarMontoDiferente = (on: boolean) => {

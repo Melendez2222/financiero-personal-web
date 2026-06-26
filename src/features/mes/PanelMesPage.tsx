@@ -8,6 +8,7 @@ import { FlujoResumen } from './components/FlujoResumen';
 import { PresupuestoVsActual } from './components/PresupuestoVsActual';
 import { SeccionLineas } from './components/SeccionLineas';
 import { SituacionalesCard } from './components/SituacionalesCard';
+import { CartillaIngresos } from '../ingresos/components/CartillaIngresos';
 
 export function PanelMesPage() {
   const { periodoId, periodoActivo } = usePeriodoActivo();
@@ -26,6 +27,8 @@ export function PanelMesPage() {
         <FlujoResumen flujo={resumen.flujo} titulo={titulo} />
         <PresupuestoVsActual secciones={resumen.secciones} />
       </Box>
+
+      <CartillaIngresos />
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
         {resumen.secciones.map((s) => (
