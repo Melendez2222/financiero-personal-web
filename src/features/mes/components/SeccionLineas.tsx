@@ -9,15 +9,22 @@ import type { SeccionResumen } from '../../../types';
 
 const COLS = '1.4fr 0.8fr 0.8fr 0.9fr 1.2fr';
 
-export function SeccionLineas({ seccion }: { seccion: SeccionResumen }) {
+interface Props {
+  seccion: SeccionResumen;
+  /** En modo "Pendiente", el encabezado muestra cuánto FALTA (Σ queda) en vez del actual. */
+  modoPendiente?: boolean;
+}
+
+export function SeccionLineas({ seccion, modoPendiente = false }: Props) {
   const { main } = tipoColors[seccion.tipo];
+  const totalFalta = seccion.lineas.reduce((a, l) => a + Math.max(0, l.queda), 0);
 
   return (
     <SectionCard
       title={TIPO_LABEL_PLURAL[seccion.tipo]}
       accent={main}
-      rightLabel="Actual"
-      rightValue={<MoneyText value={seccion.totalActual} color={main} />}
+      rightLabel={modoPendiente ? 'Falta' : 'Actual'}
+      rightValue={<MoneyText value={modoPendiente ? totalFalta : seccion.totalActual} color={main} />}
       flush
     >
       <Box sx={{ overflowX: 'auto' }}>
