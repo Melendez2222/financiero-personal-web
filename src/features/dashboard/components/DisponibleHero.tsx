@@ -16,6 +16,15 @@ export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; dis
   const { money } = useSettings();
   const usado = flujo.necesariosActual;
   const pct = disponible > 0 ? Math.min(100, (usado / disponible) * 100) : 0;
+  // Mismo cálculo realista que el backend, para que el desglose cuadre con el número grande.
+  const pend = (p: number, a: number) => Math.max(0, p - a);
+  const tengoAhora =
+    flujo.balanceInicial +
+    flujo.ingresosActual -
+    (flujo.fijosActual + flujo.necesariosActual + flujo.deudasActual + flujo.ahorrosActual + flujo.situacionalesActual);
+  const fijosPorPagar = pend(flujo.fijosPresupuesto, flujo.fijosActual);
+  const deudasPorPagar = pend(flujo.deudasPresupuesto, flujo.deudasActual);
+  const ahorrosPorAportar = pend(flujo.ahorrosPresupuesto, flujo.ahorrosActual);
 
   return (
     <Card sx={{ background: gradients.accent, color: '#fff', p: 3, display: 'flex', flexDirection: 'column' }}>
@@ -26,14 +35,14 @@ export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; dis
         {money(disponible)}
       </Box>
       <Box sx={{ fontSize: 12.5, opacity: 0.9, mb: 2 }}>
-        tras gastos fijos, deudas y ahorro programado
+        lo que te queda tras cubrir lo que aún debes pagar
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.9 }}>
-        <Linea label="Ingresos" valor={money(flujo.ingresosPresupuesto)} />
-        <Linea label="− Gastos fijos" valor={money(flujo.fijosPresupuesto)} />
-        <Linea label="− Deudas" valor={money(flujo.deudasPresupuesto)} />
-        <Linea label="− Ahorro programado" valor={money(flujo.ahorrosPresupuesto)} />
+        <Linea label="Tienes ahora" valor={money(tengoAhora)} />
+        <Linea label="− Fijos por pagar" valor={money(fijosPorPagar)} />
+        <Linea label="− Deudas por pagar" valor={money(deudasPorPagar)} />
+        <Linea label="− Ahorros por aportar" valor={money(ahorrosPorAportar)} />
       </Box>
 
       <LinearProgress

@@ -55,6 +55,6 @@ export interface ResumenPeriodo {
   secciones: SeccionResumen[];
   situacionales: SituacionalResumen[];
   flujo: FlujoResumen;
-  /** ¿Cuánto puedes gastar? = ingresos - fijos - deudas - ahorro programado. */
+  /** Dinero realmente libre = (balance + ingresos recibidos − todo lo ya pagado) − lo que aún falta pagar (fijos+deudas+ahorros). */
   disponible: number;
 }
