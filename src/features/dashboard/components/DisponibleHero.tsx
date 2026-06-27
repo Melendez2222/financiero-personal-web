@@ -22,6 +22,7 @@ export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; dis
     flujo.balanceInicial +
     flujo.ingresosActual -
     (flujo.fijosActual + flujo.necesariosActual + flujo.deudasActual + flujo.ahorrosActual + flujo.situacionalesActual);
+  const ingresosPorRecibir = pend(flujo.ingresosPresupuesto, flujo.ingresosActual);
   const fijosPorPagar = pend(flujo.fijosPresupuesto, flujo.fijosActual);
   const deudasPorPagar = pend(flujo.deudasPresupuesto, flujo.deudasActual);
   const ahorrosPorAportar = pend(flujo.ahorrosPresupuesto, flujo.ahorrosActual);
@@ -35,11 +36,12 @@ export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; dis
         {money(disponible)}
       </Box>
       <Box sx={{ fontSize: 12.5, opacity: 0.9, mb: 2 }}>
-        lo que te queda tras cubrir lo que aún debes pagar
+        proyección del mes: + lo que falta recibir − lo que aún debes pagar
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.9 }}>
         <Linea label="Tienes ahora" valor={money(tengoAhora)} />
+        <Linea label="+ Ingresos por recibir" valor={money(ingresosPorRecibir)} />
         <Linea label="− Fijos por pagar" valor={money(fijosPorPagar)} />
         <Linea label="− Deudas por pagar" valor={money(deudasPorPagar)} />
         <Linea label="− Ahorros por aportar" valor={money(ahorrosPorAportar)} />

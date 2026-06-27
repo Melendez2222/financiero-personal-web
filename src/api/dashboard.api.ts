@@ -22,8 +22,13 @@ export interface DashboardData {
 }
 
 export const dashboardApi = {
-  get: (periodoId?: string) =>
+  get: (periodoId?: string, usuarioId?: string) =>
     apiClient
-      .get<DashboardData>(endpoints.dashboard, { params: periodoId ? { periodoId } : undefined })
+      .get<DashboardData>(endpoints.dashboard, {
+        params: {
+          ...(periodoId ? { periodoId } : {}),
+          ...(usuarioId ? { usuarioId } : {}),
+        },
+      })
       .then((r) => r.data),
 };

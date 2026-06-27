@@ -15,10 +15,10 @@ export function usePeriodo(id: string | undefined) {
   });
 }
 
-export function useResumenPeriodo(id: string | undefined) {
+export function useResumenPeriodo(id: string | undefined, usuarioId?: string) {
   return useQuery({
-    queryKey: qk.resumen(id ?? ''),
-    queryFn: () => periodosApi.resumen(id as string),
+    queryKey: qk.resumen(id ?? '', usuarioId),
+    queryFn: () => periodosApi.resumen(id as string, usuarioId),
     enabled: !!id,
   });
 }

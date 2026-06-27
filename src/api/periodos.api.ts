@@ -16,7 +16,11 @@ export const periodosApi = {
     apiClient.put<Periodo>(endpoints.periodo(id), body).then((r) => r.data),
   iniciar: (id: string) =>
     apiClient.post<Periodo>(endpoints.periodoIniciar(id), {}).then((r) => r.data),
-  resumen: (id: string) =>
-    apiClient.get<ResumenPeriodo>(endpoints.periodoResumen(id)).then((r) => r.data),
+  resumen: (id: string, usuarioId?: string) =>
+    apiClient
+      .get<ResumenPeriodo>(endpoints.periodoResumen(id), {
+        params: usuarioId ? { usuarioId } : undefined,
+      })
+      .then((r) => r.data),
   remove: (id: string) => apiClient.delete<void>(endpoints.periodo(id)).then((r) => r.data),
 };

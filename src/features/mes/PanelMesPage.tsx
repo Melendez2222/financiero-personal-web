@@ -5,6 +5,7 @@ import { useResumenPeriodo } from '../../api/hooks/usePeriodos';
 import { MESES } from '../../types/common';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { PersonaSelect } from '../../components/ui/PersonaSelect';
 import { FlujoResumen } from './components/FlujoResumen';
 import { PresupuestoVsActual } from './components/PresupuestoVsActual';
 import { SeccionLineas } from './components/SeccionLineas';
@@ -16,8 +17,9 @@ type Filtro = 'pendiente' | 'cumplido' | 'global';
 
 export function PanelMesPage() {
   const { periodoId, periodoActivo } = usePeriodoActivo();
-  const { data: resumen, isLoading } = useResumenPeriodo(periodoId);
   const [filtro, setFiltro] = useState<Filtro>('pendiente');
+  const [persona, setPersona] = useState('');
+  const { data: resumen, isLoading } = useResumenPeriodo(periodoId, persona || undefined);
 
   const titulo = periodoActivo ? `${MESES[periodoActivo.mes - 1]} ${periodoActivo.anio}` : '';
 
@@ -47,16 +49,19 @@ export function PanelMesPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={filtro}
-          onChange={(_, v: Filtro | null) => v && setFiltro(v)}
-        >
-          <ToggleButton value="pendiente">Pendiente</ToggleButton>
-          <ToggleButton value="cumplido">Cumplido</ToggleButton>
-          <ToggleButton value="global">Global</ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={filtro}
+            onChange={(_, v: Filtro | null) => v && setFiltro(v)}
+          >
+            <ToggleButton value="pendiente">Pendiente</ToggleButton>
+            <ToggleButton value="cumplido">Cumplido</ToggleButton>
+            <ToggleButton value="global">Global</ToggleButton>
+          </ToggleButtonGroup>
+          <PersonaSelect value={persona} onChange={setPersona} />
+        </Box>
         <CartillaIngresos />
       </Box>
 
@@ -65,11 +70,15 @@ export function PanelMesPage() {
         <PresupuestoVsActual secciones={resumen.secciones} />
       </Box>
 
-      {seccionesVista.length === 0 ? (
+      {seccionesVista.length === 0 || seccionesVista.every((s) => s.lineas.length === 0) ? (
         <EmptyState>
-          {filtro === 'pendiente'
-            ? '🎉 Nada pendiente: todo lo del mes está pagado/recibido.'
-            : 'Aún nada cumplido este mes.'}
+          {persona
+            ? 'Esta persona no tiene categorías asignadas este mes. Ponle la “persona por defecto” en el catálogo (Configuración).'
+            : filtro === 'pendiente'
+              ? '🎉 Nada pendiente: todo lo del mes está pagado/recibido.'
+              : filtro === 'cumplido'
+                ? 'Aún nada cumplido este mes.'
+                : 'Aún no hay nada este mes.'}
         </EmptyState>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>

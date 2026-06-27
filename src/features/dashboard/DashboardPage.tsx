@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Box } from '@mui/material';
 import { usePeriodoActivo } from '../../context/PeriodoContext';
 import { useDashboard } from '../../api/hooks/useDashboard';
@@ -6,6 +7,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { PersonaSelect } from '../../components/ui/PersonaSelect';
 import { tipoColor, tipoIcon } from '../../components/ui/tipoVisual';
 import { FlujoChart } from './components/FlujoChart';
 import { DisponibleHero } from './components/DisponibleHero';
@@ -24,8 +26,9 @@ const KPIS: { key: keyof DashboardData['kpis']; label: string; tipo: Tipo; inver
 
 export function DashboardPage() {
   const { periodoId } = usePeriodoActivo();
-  const { data: dash, isLoading } = useDashboard(periodoId);
-  const { data: resumen } = useResumenPeriodo(periodoId);
+  const [persona, setPersona] = useState('');
+  const { data: dash, isLoading } = useDashboard(periodoId, persona || undefined);
+  const { data: resumen } = useResumenPeriodo(periodoId, persona || undefined);
   const { money } = useSettings();
 
   if (!periodoId) {
@@ -35,6 +38,10 @@ export function DashboardPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <PersonaSelect value={persona} onChange={setPersona} />
+      </Box>
+
       {/* KPIs */}
       <Box
         sx={{

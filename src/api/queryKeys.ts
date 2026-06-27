@@ -6,9 +6,9 @@ export const qk = {
   categorias: (tipo?: Tipo) => (tipo ? (['categorias', tipo] as const) : (['categorias'] as const)),
   periodos: ['periodos'] as const,
   periodo: (id: string) => ['periodos', id] as const,
-  resumen: (id: string) => ['periodos', id, 'resumen'] as const,
+  resumen: (id: string, usuarioId?: string) => ['periodos', id, 'resumen', usuarioId ?? null] as const,
   movimientos: (filtro: FiltroMovimientos = {}) => ['movimientos', filtro] as const,
   metas: (periodoId?: string) => (periodoId ? (['metas', periodoId] as const) : (['metas'] as const)),
   configuracion: ['configuracion'] as const,
-  dashboard: (periodoId?: string) => ['dashboard', periodoId] as const,
+  dashboard: (periodoId?: string, usuarioId?: string) => ['dashboard', periodoId, usuarioId ?? null] as const,
 };

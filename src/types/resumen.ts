@@ -55,6 +55,6 @@ export interface ResumenPeriodo {
   secciones: SeccionResumen[];
   situacionales: SituacionalResumen[];
   flujo: FlujoResumen;
-  /** Dinero realmente libre = (balance + ingresos recibidos − todo lo ya pagado) − lo que aún falta pagar (fijos+deudas+ahorros). */
+  /** Proyección de fin de mes = (balance + ingresos recibidos − todo lo ya pagado) + ingresos por recibir − lo que falta pagar (fijos+deudas+ahorros). */
   disponible: number;
 }
