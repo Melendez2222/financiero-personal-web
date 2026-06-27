@@ -70,7 +70,13 @@ export function DashboardPage() {
       {/* Flujo + Disponible */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr' }, gap: 2 }}>
         <FlujoChart datos={dash.flujoMeses} />
-        {resumen && <DisponibleHero flujo={resumen.flujo} disponible={dash.disponible} />}
+        {resumen && (
+          <DisponibleHero
+            flujo={resumen.flujo}
+            disponible={dash.disponible}
+            metasPorAportar={resumen.metasPorAportar}
+          />
+        )}
       </Box>
 
       {/* Desglose + Metas */}

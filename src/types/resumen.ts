@@ -55,6 +55,8 @@ export interface ResumenPeriodo {
   secciones: SeccionResumen[];
   situacionales: SituacionalResumen[];
   flujo: FlujoResumen;
-  /** Proyección de fin de mes = (balance + ingresos recibidos − todo lo ya pagado) + ingresos por recibir − lo que falta pagar (fijos+deudas+ahorros). */
+  /** Proyección de fin de mes = (balance + ingresos recibidos − todo lo ya pagado, incl. situacionales) + ingresos por recibir − lo que falta pagar (fijos+necesarios+deudas+ahorros) − metas activas por aportar. */
   disponible: number;
+  /** Aporte mensual de metas activas aún no cubierto este mes (reservado en `disponible`). Solo en vista global. */
+  metasPorAportar: number;
 }

@@ -12,7 +12,15 @@ function Linea({ label, valor }: { label: string; valor: string }) {
   );
 }
 
-export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; disponible: number }) {
+export function DisponibleHero({
+  flujo,
+  disponible,
+  metasPorAportar = 0,
+}: {
+  flujo: FlujoResumen;
+  disponible: number;
+  metasPorAportar?: number;
+}) {
   const { money } = useSettings();
   const usado = flujo.necesariosActual;
   const pct = disponible > 0 ? Math.min(100, (usado / disponible) * 100) : 0;
@@ -23,6 +31,7 @@ export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; dis
     flujo.ingresosActual -
     (flujo.fijosActual + flujo.necesariosActual + flujo.deudasActual + flujo.ahorrosActual + flujo.situacionalesActual);
   const ingresosPorRecibir = pend(flujo.ingresosPresupuesto, flujo.ingresosActual);
+  const necesariosPorGastar = pend(flujo.necesariosPresupuesto, flujo.necesariosActual);
   const fijosPorPagar = pend(flujo.fijosPresupuesto, flujo.fijosActual);
   const deudasPorPagar = pend(flujo.deudasPresupuesto, flujo.deudasActual);
   const ahorrosPorAportar = pend(flujo.ahorrosPresupuesto, flujo.ahorrosActual);
@@ -42,9 +51,11 @@ export function DisponibleHero({ flujo, disponible }: { flujo: FlujoResumen; dis
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.9 }}>
         <Linea label="Tienes ahora" valor={money(tengoAhora)} />
         <Linea label="+ Ingresos por recibir" valor={money(ingresosPorRecibir)} />
+        <Linea label="− Necesarios por gastar" valor={money(necesariosPorGastar)} />
         <Linea label="− Fijos por pagar" valor={money(fijosPorPagar)} />
         <Linea label="− Deudas por pagar" valor={money(deudasPorPagar)} />
         <Linea label="− Ahorros por aportar" valor={money(ahorrosPorAportar)} />
+        {metasPorAportar > 0 && <Linea label="− Metas por aportar" valor={money(metasPorAportar)} />}
       </Box>
 
       <LinearProgress
