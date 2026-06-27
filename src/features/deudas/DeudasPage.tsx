@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Box, Button, Card, Chip, IconButton, LinearProgress } from '@mui/material';
+import { Box, Button, Card, Chip, IconButton, LinearProgress, MenuItem, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import { useDeudas } from '../../api/hooks/useDeudas';
-import { useCategorias, useEliminarCategoria } from '../../api/hooks/useCategorias';
+import { useCategorias, useEliminarCategoria, useSetEstadoDeuda } from '../../api/hooks/useCategorias';
 import { useMovimientos } from '../../api/hooks/useMovimientos';
 import { usePeriodoActivo } from '../../context/PeriodoContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -16,8 +16,16 @@ import { CategoriaDialog } from '../configuracion/components/CategoriaDialog';
 import { AbonoDialog } from './components/AbonoDialog';
 import { AbonosHistorialDialog } from './components/AbonosHistorialDialog';
 import { colors, tipoColors } from '../../theme/tokens';
-import { TIPO_DEUDA_LABEL } from '../../types/common';
-import type { Categoria, Deuda, Movimiento } from '../../types';
+import { ESTADO_DEUDA_LABEL, ESTADOS_DEUDA, TIPO_DEUDA_LABEL } from '../../types/common';
+import type { Categoria, Deuda, EstadoDeuda, Movimiento } from '../../types';
+
+/** Color del estado de la deuda (solo "Iniciada" cuenta en el panel del mes). */
+const ESTADO_DEUDA_COLOR: Record<EstadoDeuda, string> = {
+  Pendiente: colors.textTertiary,
+  Iniciada: colors.positive,
+  Suspendida: colors.deuda,
+  Saldada: colors.textSecondary,
+};
 
 function fechaCorta(iso: string): string {
   const [, m, d] = iso.split('-');
@@ -31,6 +39,7 @@ export function DeudasPage() {
   const { periodoActivo } = usePeriodoActivo();
   const { money } = useSettings();
   const eliminar = useEliminarCategoria();
+  const setEstado = useSetEstadoDeuda();
 
   const [dialogo, setDialogo] = useState(false);
   const [editando, setEditando] = useState<Categoria | null>(null);
@@ -82,7 +91,7 @@ export function DeudasPage() {
           {deudas.map((d) => {
             const abonosDeuda = (movsPorCat.get(d.id) ?? []).slice().sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
             return (
-              <Card key={d.id} sx={{ p: 2.5, opacity: d.activo ? 1 : 0.6 }}>
+              <Card key={d.id} sx={{ p: 2.5, opacity: d.activo && d.estadoDeuda === 'Iniciada' ? 1 : 0.6 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.5 }}>
                   <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: c.soft, display: 'grid', placeItems: 'center', fontSize: 18 }}>
                     {d.emoji ?? '💳'}
@@ -104,6 +113,27 @@ export function DeudasPage() {
                         ` · ${d.cuotasPagadas}/${d.cuotasRestantes} cuotas · faltan ${Math.max(0, d.cuotasRestantes - d.cuotasPagadas)}`}
                     </Box>
                   </Box>
+                  <TextField
+                    select
+                    size="small"
+                    value={d.estadoDeuda}
+                    onChange={(e) => setEstado.mutate({ id: d.id, estadoDeuda: e.target.value as EstadoDeuda })}
+                    sx={{
+                      minWidth: 118,
+                      '& .MuiInputBase-input': {
+                        fontSize: 12,
+                        py: 0.5,
+                        color: ESTADO_DEUDA_COLOR[d.estadoDeuda],
+                        fontWeight: 600,
+                      },
+                    }}
+                  >
+                    {ESTADOS_DEUDA.map((s) => (
+                      <MenuItem key={s} value={s} sx={{ fontSize: 12.5 }}>
+                        {ESTADO_DEUDA_LABEL[s]}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                   <IconButton
                     size="small"
                     onClick={() => {

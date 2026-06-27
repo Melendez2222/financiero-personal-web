@@ -28,6 +28,26 @@ export const TIPO_DEUDA_LABEL: Record<TipoDeuda, string> = {
   LineaCredito: 'Línea de crédito',
 };
 
+/** Bolsa de ingreso que cubre un gasto: quincena (mitad de mes) o sueldo de fin de mes. */
+export const COBERTURAS = ['Quincena', 'FinDeMes'] as const;
+export type CoberturaIngreso = (typeof COBERTURAS)[number];
+
+export const COBERTURA_LABEL: Record<CoberturaIngreso, string> = {
+  Quincena: 'Quincena',
+  FinDeMes: 'Fin de mes',
+};
+
+/** Estado del ciclo de vida de una deuda (manual). Solo "Iniciada" entra en los cálculos del mes. */
+export const ESTADOS_DEUDA = ['Pendiente', 'Iniciada', 'Suspendida', 'Saldada'] as const;
+export type EstadoDeuda = (typeof ESTADOS_DEUDA)[number];
+
+export const ESTADO_DEUDA_LABEL: Record<EstadoDeuda, string> = {
+  Pendiente: 'No iniciada',
+  Iniciada: 'Iniciada',
+  Suspendida: 'Suspendida',
+  Saldada: 'Saldada',
+};
+
 /** Nombres de mes (índice 0 = Enero) para mostrar; el campo `mes` del periodo es 1-12. */
 export const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

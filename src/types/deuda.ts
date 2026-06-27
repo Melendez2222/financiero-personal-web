@@ -1,4 +1,4 @@
-import type { TipoDeuda } from './common';
+import type { EstadoDeuda, TipoDeuda } from './common';
 
 /** Deuda con su saldo calculado (monto total − pagos). */
 export interface Deuda {
@@ -23,4 +23,6 @@ export interface Deuda {
   saldoRestante?: number | null;
   pct?: number | null;
   activo: boolean;
+  /** Estado del ciclo de vida (manual). Solo "Iniciada" cuenta en el panel del mes. */
+  estadoDeuda: EstadoDeuda;
 }

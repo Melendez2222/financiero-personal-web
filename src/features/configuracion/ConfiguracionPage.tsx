@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { useCategorias } from '../../api/hooks/useCategorias';
+import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
 import { TIPOS } from '../../types/common';
 import { colors } from '../../theme/tokens';
@@ -9,14 +10,21 @@ import { CatalogoGrupo } from './components/CatalogoGrupo';
 
 export function ConfiguracionPage() {
   const { data: categorias = [], isLoading } = useCategorias();
+  const { esPrincipal } = useAuth();
 
   if (isLoading) return <Loading />;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: esPrincipal ? '1fr 1fr' : '1fr' },
+          gap: 2,
+        }}
+      >
         <MonedaCard />
-        <PeriodoManager />
+        {esPrincipal && <PeriodoManager />}
       </Box>
 
       <Box sx={{ fontSize: 13, color: colors.textSecondary, mt: 1 }}>

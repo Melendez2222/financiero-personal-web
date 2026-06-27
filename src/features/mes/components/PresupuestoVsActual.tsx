@@ -42,7 +42,10 @@ function Barra({ seccion }: { seccion: SeccionResumen }) {
 export function PresupuestoVsActual({ secciones }: { secciones: SeccionResumen[] }) {
   return (
     <Card sx={{ p: 2.5 }}>
-      <Box sx={{ fontSize: 16, fontWeight: 700, mb: 2 }}>Presupuesto vs. actual</Box>
+      <Box sx={{ fontSize: 16, fontWeight: 700, mb: 0.5 }}>Actual vs. presupuesto</Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, fontSize: 11.5, color: colors.textTertiary }}>
+        <Box component="span"><Box component="span" sx={{ fontWeight: 700, color: colors.textSecondary }}>Actual</Box> / presupuesto</Box>
+      </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {secciones.map((s) => (
           <Barra key={s.tipo} seccion={s} />

@@ -1,4 +1,4 @@
-import { Box, Card, LinearProgress } from '@mui/material';
+import { Box, Card } from '@mui/material';
 import { useSettings } from '../../../context/SettingsContext';
 import { gradients } from '../../../theme/tokens';
 import type { FlujoResumen } from '../../../types';
@@ -18,58 +18,48 @@ export function DisponibleHero({
   metasPorAportar = 0,
 }: {
   flujo: FlujoResumen;
+  /** Saldo actual = balance inicial + ingresos recibidos − gastos pagados. */
   disponible: number;
   metasPorAportar?: number;
 }) {
   const { money } = useSettings();
-  const usado = flujo.necesariosActual;
-  const pct = disponible > 0 ? Math.min(100, (usado / disponible) * 100) : 0;
-  // Mismo cálculo realista que el backend, para que el desglose cuadre con el número grande.
+  const gastosPagados =
+    flujo.fijosActual + flujo.necesariosActual + flujo.deudasActual + flujo.ahorrosActual + flujo.situacionalesActual;
+
+  // Proyección de fin de mes (dato secundario): saldo actual + lo que falta recibir − lo que falta pagar.
   const pend = (p: number, a: number) => Math.max(0, p - a);
-  const tengoAhora =
-    flujo.balanceInicial +
-    flujo.ingresosActual -
-    (flujo.fijosActual + flujo.necesariosActual + flujo.deudasActual + flujo.ahorrosActual + flujo.situacionalesActual);
-  const ingresosPorRecibir = pend(flujo.ingresosPresupuesto, flujo.ingresosActual);
-  const necesariosPorGastar = pend(flujo.necesariosPresupuesto, flujo.necesariosActual);
-  const fijosPorPagar = pend(flujo.fijosPresupuesto, flujo.fijosActual);
-  const deudasPorPagar = pend(flujo.deudasPresupuesto, flujo.deudasActual);
-  const ahorrosPorAportar = pend(flujo.ahorrosPresupuesto, flujo.ahorrosActual);
+  const porRecibir = pend(flujo.ingresosPresupuesto, flujo.ingresosActual);
+  const porPagar =
+    pend(flujo.fijosPresupuesto, flujo.fijosActual) +
+    pend(flujo.necesariosPresupuesto, flujo.necesariosActual) +
+    pend(flujo.deudasPresupuesto, flujo.deudasActual) +
+    pend(flujo.ahorrosPresupuesto, flujo.ahorrosActual);
+  const proyeccion = disponible + porRecibir - porPagar - metasPorAportar;
 
   return (
     <Card sx={{ background: gradients.accent, color: '#fff', p: 3, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>
-        ¿Cuánto puedes gastar?
+        Saldo actual
       </Box>
       <Box sx={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.02em', mt: 0.5 }}>
         {money(disponible)}
       </Box>
       <Box sx={{ fontSize: 12.5, opacity: 0.9, mb: 2 }}>
-        proyección del mes: + lo que falta recibir − lo que aún debes pagar
+        lo que tienes ahora: ingresos recibidos − gastos pagados
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.9 }}>
-        <Linea label="Tienes ahora" valor={money(tengoAhora)} />
-        <Linea label="+ Ingresos por recibir" valor={money(ingresosPorRecibir)} />
-        <Linea label="− Necesarios por gastar" valor={money(necesariosPorGastar)} />
-        <Linea label="− Fijos por pagar" valor={money(fijosPorPagar)} />
-        <Linea label="− Deudas por pagar" valor={money(deudasPorPagar)} />
-        <Linea label="− Ahorros por aportar" valor={money(ahorrosPorAportar)} />
-        {metasPorAportar > 0 && <Linea label="− Metas por aportar" valor={money(metasPorAportar)} />}
+        <Linea label="Balance inicial" valor={money(flujo.balanceInicial)} />
+        <Linea label="+ Ingresos recibidos" valor={money(flujo.ingresosActual)} />
+        <Linea label="− Gastos pagados" valor={money(gastosPagados)} />
       </Box>
 
-      <LinearProgress
-        variant="determinate"
-        value={pct}
-        sx={{
-          mt: 2,
-          height: 7,
-          bgcolor: 'rgba(255,255,255,.28)',
-          '& .MuiLinearProgress-bar': { bgcolor: '#fff' },
-        }}
-      />
-      <Box sx={{ fontSize: 12, opacity: 0.9, mt: 1 }}>
-        Has usado {money(usado)} en gastos variables
+      <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid rgba(255,255,255,.25)', display: 'flex', justifyContent: 'space-between', fontSize: 12.5, opacity: 0.95 }}>
+        <Box>Proyección fin de mes</Box>
+        <Box sx={{ fontWeight: 700 }}>{money(proyeccion)}</Box>
+      </Box>
+      <Box sx={{ fontSize: 11, opacity: 0.8, mt: 0.4 }}>
+        si cobras lo que falta y pagas tus compromisos pendientes
       </Box>
     </Card>
   );

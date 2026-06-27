@@ -2,11 +2,14 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth.api';
 import { authStorage } from '../lib/authStorage';
+import { EMAIL_PRINCIPAL } from '../lib/constants';
 import type { LoginRequest, RegisterRequest, Usuario } from '../types';
 
 interface AuthContextValue {
   usuario: Usuario | null;
   isAuthenticated: boolean;
+  /** True si el usuario en sesión es el principal (Cristhian): ve acciones de administración del hogar. */
+  esPrincipal: boolean;
   login: (body: LoginRequest) => Promise<void>;
   register: (body: RegisterRequest) => Promise<void>;
   logout: () => void;
@@ -57,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       usuario,
       isAuthenticated: !!usuario && !!authStorage.getToken(),
+      esPrincipal: usuario?.email === EMAIL_PRINCIPAL,
       login,
       register,
       logout,

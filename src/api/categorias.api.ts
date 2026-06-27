@@ -3,7 +3,9 @@ import { endpoints } from './endpoints';
 import type {
   ActualizarCategoriaRequest,
   Categoria,
+  CoberturaIngreso,
   CrearCategoriaRequest,
+  EstadoDeuda,
   Tipo,
 } from '../types';
 
@@ -19,5 +21,13 @@ export const categoriasApi = {
     apiClient.put<Categoria>(endpoints.categoria(id), body).then((r) => r.data),
   setActivo: (id: string, activo: boolean) =>
     apiClient.patch<Categoria>(endpoints.categoriaActivo(id), { activo }).then((r) => r.data),
+  setEstadoDeuda: (id: string, estadoDeuda: EstadoDeuda) =>
+    apiClient
+      .patch<Categoria>(endpoints.categoriaEstadoDeuda(id), { estadoDeuda })
+      .then((r) => r.data),
+  setCobertura: (id: string, cobertura: CoberturaIngreso | null) =>
+    apiClient
+      .patch<Categoria>(endpoints.categoriaCobertura(id), { cobertura })
+      .then((r) => r.data),
   remove: (id: string) => apiClient.delete<void>(endpoints.categoria(id)).then((r) => r.data),
 };

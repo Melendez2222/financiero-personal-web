@@ -1,4 +1,4 @@
-import type { Tipo, TipoDeuda } from './common';
+import type { CoberturaIngreso, EstadoDeuda, Tipo, TipoDeuda } from './common';
 
 export interface Categoria {
   id: string;
@@ -19,6 +19,14 @@ export interface Categoria {
   tipoDeuda?: TipoDeuda | null;
   /** Solo ingresos: persona por defecto a la que se atribuye al registrar (ej. de quién es la quincena). */
   usuarioId?: string | null;
+  /** Ingresos/Fijos/Necesarios: bolsa que cubre el movimiento (quincena/fin de mes). Null = sin asignar. */
+  cobertura?: CoberturaIngreso | null;
+  /** Vigencia: primer mes en que aplica (fecha 'YYYY-MM-DD' día 1). Null = sin límite ("siempre"). */
+  vigenciaDesde?: string | null;
+  /** Vigencia: último mes en que aplica (fecha 'YYYY-MM-DD' día 1). Null = sin límite ("siempre"). */
+  vigenciaHasta?: string | null;
+  /** Solo deudas: estado del ciclo de vida (manual). Solo "Iniciada" cuenta en el mes. */
+  estadoDeuda: EstadoDeuda;
   /** Activador: si está activa, se aplica a los periodos que se inicien de aquí en adelante. */
   activo: boolean;
   /** Orden de presentación dentro de su grupo. */
@@ -36,6 +44,10 @@ export interface CrearCategoriaRequest {
   capitalPorCuota?: number | null;
   tipoDeuda?: TipoDeuda | null;
   usuarioId?: string | null;
+  cobertura?: CoberturaIngreso | null;
+  vigenciaDesde?: string | null;
+  vigenciaHasta?: string | null;
+  estadoDeuda?: EstadoDeuda;
   activo?: boolean;
 }
 

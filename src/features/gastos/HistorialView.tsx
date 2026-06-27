@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { usePeriodoActivo } from '../../context/PeriodoContext';
@@ -23,12 +23,17 @@ interface Props {
 }
 
 export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accionNueva }: Props) {
-  const { periodos, periodoActivo } = usePeriodoActivo();
+  const { periodos, periodoActivo, periodoId } = usePeriodoActivo();
   const { data: categorias = [] } = useCategorias();
   const { data: usuarios = [] } = useUsuarios();
   const eliminar = useEliminarMovimiento();
 
-  const [filtros, setFiltros] = useState<FiltrosValue>({ mes: '', tipo: 'Todos', categoria: '', q: '' });
+  // El filtro de mes arranca y sigue al selector global del header; el dropdown local permite
+  // luego ver otro mes o "Todos los meses".
+  const [filtros, setFiltros] = useState<FiltrosValue>({ mes: periodoId ?? '', tipo: 'Todos', categoria: '', q: '' });
+  useEffect(() => {
+    setFiltros((f) => ({ ...f, mes: periodoId ?? '' }));
+  }, [periodoId]);
   const [dialogo, setDialogo] = useState(false);
   const [editando, setEditando] = useState<Movimiento | null>(null);
   const [aEliminar, setAEliminar] = useState<Movimiento | null>(null);

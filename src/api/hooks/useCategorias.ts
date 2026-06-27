@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { categoriasApi } from '../categorias.api';
 import { qk } from '../queryKeys';
-import type { ActualizarCategoriaRequest, CrearCategoriaRequest, Tipo } from '../../types';
+import type {
+  ActualizarCategoriaRequest,
+  CoberturaIngreso,
+  CrearCategoriaRequest,
+  EstadoDeuda,
+  Tipo,
+} from '../../types';
 
 export function useCategorias(tipo?: Tipo) {
   return useQuery({
@@ -35,6 +41,29 @@ export function useToggleCategoriaActivo() {
   return useMutation({
     mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
       categoriasApi.setActivo(id, activo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
+  });
+}
+
+export function useSetEstadoDeuda() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, estadoDeuda }: { id: string; estadoDeuda: EstadoDeuda }) =>
+      categoriasApi.setEstadoDeuda(id, estadoDeuda),
+    onSuccess: () => {
+      // El estado cambia lo que entra al panel del mes (resumen) y la lista de deudas.
+      qc.invalidateQueries({ queryKey: ['categorias'] });
+      qc.invalidateQueries({ queryKey: ['periodos'] });
+      qc.invalidateQueries({ queryKey: ['deudas'] });
+    },
+  });
+}
+
+export function useSetCobertura() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, cobertura }: { id: string; cobertura: CoberturaIngreso | null }) =>
+      categoriasApi.setCobertura(id, cobertura),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
   });
 }

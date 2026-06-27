@@ -11,6 +11,8 @@ export const endpoints = {
   categorias: '/categorias',
   categoria: (id: string) => `/categorias/${id}`,
   categoriaActivo: (id: string) => `/categorias/${id}/activo`,
+  categoriaEstadoDeuda: (id: string) => `/categorias/${id}/estado-deuda`,
+  categoriaCobertura: (id: string) => `/categorias/${id}/cobertura`,
   periodos: '/periodos',
   periodo: (id: string) => `/periodos/${id}`,
   periodoIniciar: (id: string) => `/periodos/${id}/iniciar`,

@@ -12,6 +12,8 @@ export interface LineaResumen {
   queda: number;
   fechaVencimiento?: string;
   emoji?: string;
+  /** Si la categoría está activa hoy (para el filtro Activos/Todos del panel). */
+  activo: boolean;
 }
 
 /** Agrupación de líneas por tipo (Ingresos, Fijos, Necesarios, Deudas, Ahorros). */
