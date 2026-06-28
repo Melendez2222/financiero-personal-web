@@ -4,7 +4,8 @@ export interface MetaAhorro {
   id: string;
   nombre: string;
   emoji: string;
-  montoObjetivo: number;
+  /** Monto objetivo. Null = ahorro abierto (sin meta fija). */
+  montoObjetivo: number | null;
   /** Aporte mensual programado. */
   aporteMensual: number;
   /** Total acumulado ahorrado hacia la meta. */
@@ -20,7 +21,7 @@ export interface MetaAhorro {
 export interface CrearMetaRequest {
   nombre: string;
   emoji: string;
-  montoObjetivo: number;
+  montoObjetivo: number | null;
   aporteMensual: number;
   fechaLimite?: string | null;
   estado?: EstadoMeta;

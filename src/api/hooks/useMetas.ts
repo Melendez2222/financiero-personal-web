@@ -58,3 +58,11 @@ export function useAportarMeta() {
     onSuccess: () => invalidar(qc),
   });
 }
+
+export function useEliminarMeta() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => metasApi.remove(id),
+    onSuccess: () => invalidar(qc),
+  });
+}

@@ -50,8 +50,21 @@ export function FlujoResumen({ flujo, titulo }: { flujo: Flujo; titulo: string }
       <Fila color={tipoColors.Ingreso.main} label="Ingresos" pres={flujo.ingresosPresupuesto} actual={flujo.ingresosActual} />
       <Fila color={tipoColors.Fijo.main} label="Gastos fijos" pres={flujo.fijosPresupuesto} actual={flujo.fijosActual} />
       <Fila color={tipoColors.Necesario.main} label="Gastos necesarios" pres={flujo.necesariosPresupuesto} actual={flujo.necesariosActual} />
-      <Fila color={tipoColors.Deuda.main} label="Deudas" pres={flujo.deudasPresupuesto} actual={flujo.deudasActual} />
+      <Fila color={tipoColors.Deuda.main} label="Deudas (capital)" pres={flujo.deudasPresupuesto} actual={flujo.deudasActual} />
       <Fila color={tipoColors.Ahorro.main} label="Ahorros" pres={flujo.ahorrosPresupuesto} actual={flujo.ahorrosActual} />
+
+      {flujo.interesesActual > 0 && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'center', gap: 1.5, py: 0.9 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 9, height: 9, borderRadius: '3px', bgcolor: colors.textTertiary, flexShrink: 0 }} />
+            <Box sx={{ fontSize: 13.5, fontWeight: 500 }}>Intereses de deuda</Box>
+          </Box>
+          <Box sx={{ textAlign: 'right', fontSize: 13.5, color: colors.textTertiary }}>—</Box>
+          <Box sx={{ textAlign: 'right', fontSize: 13.5 }}>
+            <MoneyText value={flujo.interesesActual} />
+          </Box>
+        </Box>
+      )}
 
       {flujo.situacionalesActual > 0 && (
         <Box sx={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'center', gap: 1.5, py: 0.9 }}>

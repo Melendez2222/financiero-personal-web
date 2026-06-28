@@ -23,8 +23,14 @@ export function DisponibleHero({
   metasPorAportar?: number;
 }) {
   const { money } = useSettings();
+  // deudasActual es solo capital; el interés pagado también salió → se incluye para que cuadre.
   const gastosPagados =
-    flujo.fijosActual + flujo.necesariosActual + flujo.deudasActual + flujo.ahorrosActual + flujo.situacionalesActual;
+    flujo.fijosActual +
+    flujo.necesariosActual +
+    flujo.deudasActual +
+    flujo.ahorrosActual +
+    flujo.situacionalesActual +
+    flujo.interesesActual;
 
   // Proyección de fin de mes (dato secundario): saldo actual + lo que falta recibir − lo que falta pagar.
   const pend = (p: number, a: number) => Math.max(0, p - a);

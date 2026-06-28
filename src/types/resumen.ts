@@ -41,6 +41,8 @@ export interface FlujoResumen {
   situacionalesActual: number;
   /** Presupuesto total de gastos - gastos reales acumulados (incluye situacionales). */
   totalRestante: number;
+  /** Interés pagado en deudas Iniciadas este mes (pago completo − capital recuperado). */
+  interesesActual: number;
 }
 
 /** Gasto situacional (imprevisto sin categoría) del periodo. */

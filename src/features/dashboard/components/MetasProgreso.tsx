@@ -30,15 +30,19 @@ export function MetasProgreso({ metas }: { metas: DashboardData['metas'] }) {
             <Box key={m.id}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6, fontSize: 13.5 }}>
                 <Box sx={{ fontWeight: 600 }}>{m.nombre}</Box>
-                <Box sx={{ color: colors.textTertiary }}>{m.pct}%</Box>
+                <Box sx={{ color: colors.textTertiary }}>{m.objetivo != null ? `${m.pct}%` : money(m.actual)}</Box>
               </Box>
               <LinearProgress
                 variant="determinate"
-                value={m.pct}
-                sx={{ height: 8, '& .MuiLinearProgress-bar': { bgcolor: colors.ahorro } }}
+                value={m.objetivo != null ? m.pct : 100}
+                sx={{
+                  height: 8,
+                  ...(m.objetivo == null && { bgcolor: colors.ahorroSoft }),
+                  '& .MuiLinearProgress-bar': { bgcolor: colors.ahorro },
+                }}
               />
               <Box sx={{ fontSize: 12, color: colors.textTertiary, mt: 0.6 }}>
-                {money(m.actual)} de {money(m.objetivo)}
+                {m.objetivo != null ? `${money(m.actual)} de ${money(m.objetivo)}` : 'Ahorro abierto'}
               </Box>
             </Box>
           ))}

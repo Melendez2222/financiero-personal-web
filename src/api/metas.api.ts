@@ -23,5 +23,6 @@ export const metasApi = {
     apiClient.post<MetaAhorro>(endpoints.metaAportes(id), body).then((r) => r.data),
   listAportes: (id: string) =>
     apiClient.get<AporteMeta[]>(endpoints.metaAportes(id)).then((r) => r.data),
+  remove: (id: string) => apiClient.delete<void>(endpoints.meta(id)).then((r) => r.data),
 };
 

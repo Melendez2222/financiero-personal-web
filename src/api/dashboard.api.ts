@@ -18,7 +18,7 @@ export interface DashboardData {
   flujoMeses: { mes: string; ingresos: number; gastos: number }[];
   desglose: { categoria: string; tipo: Tipo; monto: number; pct: number }[];
   disponible: number;
-  metas: { id: string; nombre: string; pct: number; actual: number; objetivo: number }[];
+  metas: { id: string; nombre: string; pct: number; actual: number; objetivo: number | null }[];
 }
 
 export const dashboardApi = {

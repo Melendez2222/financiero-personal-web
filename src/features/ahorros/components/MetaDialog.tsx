@@ -2,51 +2,75 @@ import { useState, type FormEvent } from 'react';
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   MenuItem,
   TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useCrearMeta } from '../../../api/hooks/useMetas';
+import { useActualizarMeta, useCrearMeta } from '../../../api/hooks/useMetas';
 import { colors } from '../../../theme/tokens';
-import type { EstadoMeta } from '../../../types';
+import { ESTADOS_META } from '../../../types/common';
+import type { EstadoMeta, MetaAhorro } from '../../../types';
 
 const EMOJIS = ['📦', '🛏️', '🌙', '🛟', '✈️', '💻', '🏠', '🚗', '🎓', '💍', '🏖️', '🎁'];
 const ESTADOS_INICIALES: EstadoMeta[] = ['NoIniciado', 'Pendiente', 'Iniciado'];
+const estadoLabel = (es: EstadoMeta) => (es === 'NoIniciado' ? 'No iniciado' : es);
 
-export function MetaDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  /** Si viene, el diálogo edita esa meta; si no, crea una nueva. */
+  meta?: MetaAhorro | null;
+}
+
+export function MetaDialog({ open, onClose, meta }: Props) {
+  const editando = !!meta;
   const crear = useCrearMeta();
-  const [nombre, setNombre] = useState('');
-  const [emoji, setEmoji] = useState('📦');
-  const [montoObjetivo, setMontoObjetivo] = useState('');
-  const [aporteMensual, setAporteMensual] = useState('');
-  const [fechaLimite, setFechaLimite] = useState('');
-  const [estado, setEstado] = useState<EstadoMeta>('Iniciado');
+  const actualizar = useActualizarMeta();
 
-  const valido = nombre.trim().length > 0 && Number(montoObjetivo) > 0;
+  const [nombre, setNombre] = useState(meta?.nombre ?? '');
+  const [emoji, setEmoji] = useState(meta?.emoji ?? '📦');
+  const [sinMeta, setSinMeta] = useState(editando ? meta?.montoObjetivo == null : false);
+  const [montoObjetivo, setMontoObjetivo] = useState(
+    meta?.montoObjetivo != null ? String(meta.montoObjetivo) : '',
+  );
+  const [aporteMensual, setAporteMensual] = useState(meta ? String(meta.aporteMensual) : '');
+  const [fechaLimite, setFechaLimite] = useState(meta?.fechaLimite ?? '');
+  const [estado, setEstado] = useState<EstadoMeta>(meta?.estado ?? 'Iniciado');
+
+  const opcionesEstado = editando ? ESTADOS_META : ESTADOS_INICIALES;
+  const guardando = crear.isPending || actualizar.isPending;
+  const valido = nombre.trim().length > 0 && (sinMeta || Number(montoObjetivo) > 0);
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
     if (!valido) return;
-    await crear.mutateAsync({
+    const body = {
       nombre: nombre.trim(),
       emoji,
-      montoObjetivo: Number(montoObjetivo),
+      montoObjetivo: sinMeta ? null : Number(montoObjetivo),
       aporteMensual: Number(aporteMensual) || 0,
       fechaLimite: fechaLimite || null,
       estado,
-    });
+    };
+    if (editando && meta) {
+      await actualizar.mutateAsync({ id: meta.id, body });
+    } else {
+      await crear.mutateAsync(body);
+    }
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
-        Nueva meta de ahorro
+        {editando ? 'Editar meta' : 'Nueva meta de ahorro'}
         <IconButton onClick={onClose} size="small">
           <CloseIcon fontSize="small" />
         </IconButton>
@@ -89,15 +113,23 @@ export function MetaDialog({ open, onClose }: { open: boolean; onClose: () => vo
             </Box>
           </Box>
 
+          <FormControlLabel
+            control={<Checkbox checked={sinMeta} onChange={(e) => setSinMeta(e.target.checked)} size="small" />}
+            label="Es un ahorro sin meta fija (monto libre)"
+            sx={{ '& .MuiFormControlLabel-label': { fontSize: 13.5 } }}
+          />
+
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <TextField
               label="Monto meta (S/)"
               type="number"
-              value={montoObjetivo}
+              value={sinMeta ? '' : montoObjetivo}
               onChange={(e) => setMontoObjetivo(e.target.value)}
               size="small"
               slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
-              required
+              disabled={sinMeta}
+              required={!sinMeta}
+              helperText={sinMeta ? 'Ahorro abierto' : undefined}
             />
             <TextField
               label="Aporte mensual (S/)"
@@ -121,15 +153,15 @@ export function MetaDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
           <TextField
             select
-            label="Estado inicial"
+            label={editando ? 'Estado' : 'Estado inicial'}
             value={estado}
             onChange={(e) => setEstado(e.target.value as EstadoMeta)}
             size="small"
             fullWidth
           >
-            {ESTADOS_INICIALES.map((es) => (
+            {opcionesEstado.map((es) => (
               <MenuItem key={es} value={es}>
-                {es === 'NoIniciado' ? 'No iniciado' : es}
+                {estadoLabel(es)}
               </MenuItem>
             ))}
           </TextField>
@@ -138,8 +170,8 @@ export function MetaDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <Button onClick={onClose} color="inherit">
             Cancelar
           </Button>
-          <Button type="submit" variant="contained" color="secondary" disabled={!valido || crear.isPending}>
-            {crear.isPending ? 'Creando…' : 'Crear meta'}
+          <Button type="submit" variant="contained" color="secondary" disabled={!valido || guardando}>
+            {guardando ? 'Guardando…' : editando ? 'Guardar' : 'Crear meta'}
           </Button>
         </DialogActions>
       </Box>

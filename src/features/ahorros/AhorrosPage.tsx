@@ -19,10 +19,13 @@ export function AhorrosPage() {
   if (isLoading) return <Loading />;
 
   const totalAcumulado = metas.reduce((s, m) => s + m.montoAcumulado, 0);
-  const totalObjetivo = metas.reduce((s, m) => s + m.montoObjetivo, 0);
+  // El % general solo considera metas CON objetivo (las abiertas no tienen meta que completar).
+  const conObjetivo = metas.filter((m) => m.montoObjetivo != null);
+  const totalObjetivo = conObjetivo.reduce((s, m) => s + (m.montoObjetivo ?? 0), 0);
+  const acumuladoConObjetivo = conObjetivo.reduce((s, m) => s + m.montoAcumulado, 0);
   const aporteMes = metas.reduce((s, m) => s + (m.aporteMes ?? 0), 0);
   const aportePlan = metas.filter((m) => m.activo).reduce((s, m) => s + m.aporteMensual, 0);
-  const overall = totalObjetivo ? Math.min(100, Math.round((totalAcumulado / totalObjetivo) * 100)) : 0;
+  const overall = totalObjetivo ? Math.min(100, Math.round((acumuladoConObjetivo / totalObjetivo) * 100)) : 0;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>

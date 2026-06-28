@@ -35,7 +35,7 @@ export function AporteDialog({ open, onClose, meta }: Props) {
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(hoyISO());
 
-  const falta = Math.max(0, meta.montoObjetivo - meta.montoAcumulado);
+  const falta = meta.montoObjetivo != null ? Math.max(0, meta.montoObjetivo - meta.montoAcumulado) : null;
   const valido = Number(monto) > 0 && !!fecha;
 
   const enviar = async (e: FormEvent) => {
@@ -59,7 +59,8 @@ export function AporteDialog({ open, onClose, meta }: Props) {
       <Box component="form" onSubmit={enviar}>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <Box sx={{ fontSize: 13, color: colors.textSecondary }}>
-            {meta.emoji} <strong>{meta.nombre}</strong> · falta {money(falta)}
+            {meta.emoji} <strong>{meta.nombre}</strong>
+            {falta != null ? ` · falta ${money(falta)}` : ' · ahorro abierto'}
           </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <TextField
