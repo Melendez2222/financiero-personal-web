@@ -21,6 +21,10 @@ export interface Categoria {
   usuarioId?: string | null;
   /** Ingresos/Fijos/Necesarios: bolsa que cubre el movimiento (quincena/fin de mes). Null = sin asignar. */
   cobertura?: CoberturaIngreso | null;
+  /** Solo Fijos/Necesarios divididos: porción cubierta con la quincena. */
+  montoQuincena?: number | null;
+  /** Solo Fijos/Necesarios divididos: porción cubierta con fin de mes. */
+  montoFinDeMes?: number | null;
   /** Vigencia: primer mes en que aplica (fecha 'YYYY-MM-DD' día 1). Null = sin límite ("siempre"). */
   vigenciaDesde?: string | null;
   /** Vigencia: último mes en que aplica (fecha 'YYYY-MM-DD' día 1). Null = sin límite ("siempre"). */
@@ -45,6 +49,8 @@ export interface CrearCategoriaRequest {
   tipoDeuda?: TipoDeuda | null;
   usuarioId?: string | null;
   cobertura?: CoberturaIngreso | null;
+  montoQuincena?: number | null;
+  montoFinDeMes?: number | null;
   vigenciaDesde?: string | null;
   vigenciaHasta?: string | null;
   estadoDeuda?: EstadoDeuda;
@@ -52,3 +58,8 @@ export interface CrearCategoriaRequest {
 }
 
 export type ActualizarCategoriaRequest = Partial<Omit<CrearCategoriaRequest, 'tipo'>>;
+
+/** True si el gasto está dividido entre quincena y fin de mes. */
+export function categoriaDividida(c: Pick<Categoria, 'montoQuincena' | 'montoFinDeMes'>): boolean {
+  return c.montoQuincena != null && c.montoFinDeMes != null;
+}

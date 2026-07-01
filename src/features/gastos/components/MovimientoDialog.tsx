@@ -16,11 +16,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Link as RouterLink } from 'react-router-dom';
 import { useCategorias } from '../../../api/hooks/useCategorias';
 import { useActualizarMovimiento, useCrearMovimiento } from '../../../api/hooks/useMovimientos';
+import { useMetas } from '../../../api/hooks/useMetas';
 import { useUsuarios } from '../../../api/hooks/useUsuarios';
 import { useAuth } from '../../../context/AuthContext';
-import { TIPO_LABEL } from '../../../types/common';
+import { TIPO_LABEL, COBERTURA_LABEL } from '../../../types/common';
 import { colors } from '../../../theme/tokens';
 import type { Categoria, Movimiento, Periodo, Tipo } from '../../../types';
+import { categoriaDividida } from '../../../types/categoria';
 
 interface Props {
   open: boolean;
@@ -33,6 +35,7 @@ interface Props {
 export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movimiento }: Props) {
   const editando = !!movimiento;
   const { data: categorias = [] } = useCategorias();
+  const { data: metas = [] } = useMetas(periodo.id);
   const { data: usuarios = [] } = useUsuarios();
   const { usuario } = useAuth();
   const crear = useCrearMovimiento();
@@ -49,6 +52,32 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
   // Para ingresos: al elegir la categoría se auto-jala su presupuesto y el monto queda bloqueado;
   // este switch lo libera para registrar un monto distinto (ej. recibí menos). Al editar, libre.
   const [montoDiferente, setMontoDiferente] = useState(editando);
+  const [montoQuincena, setMontoQuincena] = useState('');
+  const [montoFinDeMes, setMontoFinDeMes] = useState('');
+  const [pagarDesdeAhorro, setPagarDesdeAhorro] = useState(!!movimiento?.metaId);
+  const [metaId, setMetaId] = useState(movimiento?.metaId ?? '');
+
+  const ahorros = useMemo(
+    () => metas.filter((m) => m.montoObjetivo == null && m.activo),
+    [metas],
+  );
+  const ahorroSel = useMemo(
+    () => ahorros.find((m) => m.id === metaId),
+    [ahorros, metaId],
+  );
+  const montoNum = Number(monto);
+  const saldoAhorro = ahorroSel?.montoAcumulado ?? 0;
+  const creditoEdicion =
+    editando && movimiento?.metaId && movimiento.metaId === metaId ? movimiento.monto : 0;
+  const saldoDisponible = saldoAhorro + creditoEdicion;
+  const excedeSaldoAhorro =
+    pagarDesdeAhorro && !!metaId && montoNum > 0 && montoNum > saldoDisponible;
+
+  const categoriaSel = useMemo(
+    () => categorias.find((c) => c.id === categoriaId),
+    [categorias, categoriaId],
+  );
+  const esDividida = !editando && !!categoriaSel && categoriaDividida(categoriaSel);
 
   const esSituacional = tipo === 'Situacional';
   const esIngreso = tipo === 'Ingreso';
@@ -69,7 +98,18 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
   const seleccionarCategoria = (id: string) => {
     setCategoriaId(id);
     const cat = categorias.find((c) => c.id === id);
-    if (esIngreso && !montoDiferente && cat) setMonto(String(cat.presupuesto));
+    if (cat && categoriaDividida(cat)) {
+      setMontoQuincena(String(cat.montoQuincena));
+      setMontoFinDeMes(String(cat.montoFinDeMes));
+      setMonto('');
+    } else if (esIngreso && !montoDiferente && cat) {
+      setMonto(String(cat.presupuesto));
+      setMontoQuincena('');
+      setMontoFinDeMes('');
+    } else {
+      setMontoQuincena('');
+      setMontoFinDeMes('');
+    }
     // Al crear, prefija la persona desde la categoría (respaldo: usuario en sesión).
     if (!editando && cat) setUsuarioId(cat.usuarioId ?? usuario?.id ?? '');
   };
@@ -83,27 +123,58 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
     }
   };
 
+  const mostrarPagarDesdeAhorro = !esIngreso && !esDividida;
   const guardando = crear.isPending || actualizar.isPending;
   const valido = esSituacional || esIngresoExtra
     ? concepto.trim().length > 0 && Number(monto) > 0 && !!fecha
-    : !!categoriaId && Number(monto) > 0 && !!fecha;
+      && (!pagarDesdeAhorro || (!!metaId && !excedeSaldoAhorro))
+    : esDividida
+      ? !!categoriaId && Number(montoQuincena) > 0 && Number(montoFinDeMes) > 0 && !!fecha
+      : !!categoriaId && Number(monto) > 0 && !!fecha
+        && (!pagarDesdeAhorro || (!!metaId && !excedeSaldoAhorro));
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
     if (!valido) return;
-    const datos = {
-      periodoId: periodo.id,
-      tipo,
-      fecha,
-      monto: Number(monto),
-      nota,
-      categoriaId: esSituacional || esIngresoExtra ? null : categoriaId,
-      concepto: esSituacional || esIngresoExtra ? concepto.trim() : null,
-      usuarioId: usuarioId || null,
-    };
     if (editando && movimiento) {
+      const datos = {
+        periodoId: periodo.id,
+        tipo,
+        fecha,
+        monto: Number(monto),
+        nota,
+        categoriaId: esSituacional || esIngresoExtra ? null : categoriaId,
+        concepto: esSituacional || esIngresoExtra ? concepto.trim() : null,
+        usuarioId: usuarioId || null,
+        cobertura: movimiento.cobertura ?? null,
+        metaId: pagarDesdeAhorro && metaId ? metaId : null,
+      };
       await actualizar.mutateAsync({ id: movimiento.id, body: datos });
+    } else if (esDividida && categoriaSel) {
+      const base = {
+        periodoId: periodo.id,
+        tipo,
+        fecha,
+        categoriaId: categoriaSel.id,
+        nota,
+        usuarioId: usuarioId || null,
+      };
+      await Promise.all([
+        crear.mutateAsync({ ...base, monto: Number(montoQuincena), cobertura: 'Quincena' as const }),
+        crear.mutateAsync({ ...base, monto: Number(montoFinDeMes), cobertura: 'FinDeMes' as const }),
+      ]);
     } else {
+      const datos = {
+        periodoId: periodo.id,
+        tipo,
+        fecha,
+        monto: Number(monto),
+        nota,
+        categoriaId: esSituacional || esIngresoExtra ? null : categoriaId,
+        concepto: esSituacional || esIngresoExtra ? concepto.trim() : null,
+        usuarioId: usuarioId || null,
+        metaId: pagarDesdeAhorro && metaId ? metaId : null,
+      };
       await crear.mutateAsync(datos);
     }
     onClose();
@@ -111,6 +182,10 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
 
   const cambiarTipo = (nuevo: Tipo) => {
     setTipo(nuevo);
+    if (nuevo === 'Ingreso') {
+      setPagarDesdeAhorro(false);
+      setMetaId('');
+    }
     if (nuevo !== 'Situacional') {
       const sigueValida = categorias.some((c) => c.id === categoriaId && c.tipo === nuevo);
       if (!sigueValida) setCategoriaId('');
@@ -187,6 +262,41 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
             </Box>
           )}
 
+          {esDividida ? (
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField
+                label="Quincena (S/)"
+                type="number"
+                value={montoQuincena}
+                onChange={(e) => setMontoQuincena(e.target.value)}
+                size="small"
+                slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                required
+              />
+              <TextField
+                label="Fin de mes (S/)"
+                type="number"
+                value={montoFinDeMes}
+                onChange={(e) => setMontoFinDeMes(e.target.value)}
+                size="small"
+                slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                required
+              />
+              <TextField
+                label="Fecha"
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                size="small"
+                slotProps={{ inputLabel: { shrink: true } }}
+                required
+                sx={{ gridColumn: '1 / -1' }}
+              />
+              <Box sx={{ gridColumn: '1 / -1', fontSize: 12, color: colors.textTertiary }}>
+                Se registrarán dos movimientos (quincena y fin de mes) para esta categoría.
+              </Box>
+            </Box>
+          ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <TextField
               label="Monto (S/)"
@@ -209,8 +319,15 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
               required
             />
           </Box>
+          )}
 
-          {esIngreso && !esIngresoExtra && (
+          {editando && movimiento?.cobertura && (
+            <Box sx={{ fontSize: 12.5, color: colors.textSecondary }}>
+              Bolsa: {COBERTURA_LABEL[movimiento.cobertura]}
+            </Box>
+          )}
+
+          {esIngreso && !esIngresoExtra && !esDividida && (
             <FormControlLabel
               control={
                 <Switch
@@ -222,6 +339,59 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
               label="Recibí un monto diferente al planeado"
               sx={{ mt: -1, '& .MuiFormControlLabel-label': { fontSize: 13 } }}
             />
+          )}
+
+          {mostrarPagarDesdeAhorro && (
+            <>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={pagarDesdeAhorro}
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      setPagarDesdeAhorro(on);
+                      if (!on) setMetaId('');
+                      else if (!metaId && ahorros.length === 1) setMetaId(ahorros[0].id);
+                    }}
+                    size="small"
+                  />
+                }
+                label="Pagar desde un ahorro"
+                sx={{ mt: -1, '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+              />
+              {pagarDesdeAhorro && (
+                <TextField
+                  select
+                  label="Ahorro"
+                  value={metaId}
+                  onChange={(e) => setMetaId(e.target.value)}
+                  size="small"
+                  fullWidth
+                  required
+                  helperText={
+                    excedeSaldoAhorro
+                      ? `Saldo insuficiente (disponible: S/ ${saldoDisponible.toFixed(2)})`
+                      : ahorroSel
+                        ? `Saldo disponible: S/ ${saldoDisponible.toFixed(2)}`
+                        : ahorros.length === 0
+                          ? 'No hay ahorros activos. Crea uno en Ahorros.'
+                          : 'Selecciona el ahorro que financiará este gasto.'
+                  }
+                  slotProps={
+                    excedeSaldoAhorro
+                      ? { formHelperText: { sx: { color: colors.negative } } }
+                      : undefined
+                  }
+                >
+                  {ahorros.map((a) => (
+                    <MenuItem key={a.id} value={a.id}>
+                      {a.emoji ? `${a.emoji}  ` : ''}
+                      {a.nombre} (S/ {a.montoAcumulado.toFixed(2)})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </>
           )}
 
           <TextField

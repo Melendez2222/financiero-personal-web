@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { usePeriodoActivo } from '../../context/PeriodoContext';
 import { useCategorias } from '../../api/hooks/useCategorias';
 import { useEliminarMovimiento, useMovimientos } from '../../api/hooks/useMovimientos';
+import { useMetas } from '../../api/hooks/useMetas';
 import { useUsuarios } from '../../api/hooks/useUsuarios';
 import { Loading } from '../../components/ui/Loading';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -25,6 +26,7 @@ interface Props {
 export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accionNueva }: Props) {
   const { periodos, periodoActivo, periodoId } = usePeriodoActivo();
   const { data: categorias = [] } = useCategorias();
+  const { data: metas = [] } = useMetas(periodoId ?? undefined);
   const { data: usuarios = [] } = useUsuarios();
   const eliminar = useEliminarMovimiento();
 
@@ -106,6 +108,7 @@ export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accion
             movimientos={lista}
             categorias={categorias}
             usuarios={usuarios}
+            metas={metas}
             onEdit={abrirEditar}
             onDelete={setAEliminar}
           />

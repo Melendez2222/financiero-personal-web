@@ -1,4 +1,4 @@
-import type { Tipo } from './common';
+import type { CoberturaIngreso, Tipo } from './common';
 
 /** Movimiento concreto (= "Transacción" del concepto). Alimenta los totales "actual". */
 export interface Movimiento {
@@ -18,6 +18,10 @@ export interface Movimiento {
   /** Solo abonos a deuda: true = cuota regular (cuenta como cuota); false = abono extra a capital. */
   esCuota?: boolean;
   nota: string;
+  /** Solo gastos de categorías divididas: bolsa a la que pertenece este movimiento. */
+  cobertura?: CoberturaIngreso | null;
+  /** Si está definido, el gasto se financió desde este ahorro y no afecta el disponible del mes. */
+  metaId?: string | null;
 }
 
 export interface CrearMovimientoRequest {
@@ -31,6 +35,8 @@ export interface CrearMovimientoRequest {
   montoCapital?: number | null;
   esCuota?: boolean;
   nota?: string;
+  cobertura?: CoberturaIngreso | null;
+  metaId?: string | null;
 }
 
 export type ActualizarMovimientoRequest = Partial<Omit<CrearMovimientoRequest, 'periodoId'>>;

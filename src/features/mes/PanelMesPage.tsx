@@ -86,7 +86,9 @@ export function PanelMesPage() {
     return resumen.secciones
       .filter((s) => s.tipo === 'Fijo' || s.tipo === 'Necesario')
       .map((s) => {
-        let lineas = s.lineas.filter((l) => catCobertura.get(l.categoriaId) === faseActual);
+        let lineas = s.lineas.filter(
+          (l) => (l.cobertura ?? catCobertura.get(l.categoriaId)) === faseActual,
+        );
         if (verActivos) lineas = lineas.filter((l) => l.activo);
         return {
           ...s,

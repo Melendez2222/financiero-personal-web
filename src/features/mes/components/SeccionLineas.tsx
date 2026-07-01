@@ -4,7 +4,7 @@ import { MoneyText } from '../../../components/ui/MoneyText';
 import { EstadoLineaChip } from '../../../components/ui/EstadoLineaChip';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { colors, tipoColors } from '../../../theme/tokens';
-import { TIPO_LABEL_PLURAL } from '../../../types/common';
+import { TIPO_LABEL_PLURAL, COBERTURA_LABEL } from '../../../types/common';
 import type { SeccionResumen } from '../../../types';
 
 const COLS = '1.4fr 0.8fr 0.8fr 0.9fr 1.2fr';
@@ -55,7 +55,7 @@ export function SeccionLineas({ seccion, modoPendiente = false }: Props) {
 
           {seccion.lineas.map((l) => (
             <Box
-              key={l.categoriaId}
+              key={`${l.categoriaId}-${l.cobertura ?? ''}`}
               sx={{
                 display: 'grid',
                 gridTemplateColumns: COLS,
@@ -70,6 +70,11 @@ export function SeccionLineas({ seccion, modoPendiente = false }: Props) {
                 <Box sx={{ minWidth: 0 }}>
                   <Box sx={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {l.nombre}
+                    {l.cobertura && (
+                      <Box component="span" sx={{ fontWeight: 500, color: colors.textTertiary, ml: 0.5 }}>
+                        · {COBERTURA_LABEL[l.cobertura]}
+                      </Box>
+                    )}
                   </Box>
                   {l.fechaVencimiento && (
                     <Box sx={{ fontSize: 11, color: colors.textDisabled }}>Vence {l.fechaVencimiento}</Box>

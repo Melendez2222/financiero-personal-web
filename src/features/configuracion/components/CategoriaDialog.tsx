@@ -26,7 +26,9 @@ import {
   TIPO_LABEL_PLURAL,
   TIPOS_DEUDA,
 } from '../../../types/common';
+import { colors } from '../../../theme/tokens';
 import type { Categoria, CoberturaIngreso, EstadoDeuda, Tipo, TipoDeuda } from '../../../types';
+import { categoriaDividida } from '../../../types/categoria';
 
 interface Props {
   open: boolean;
@@ -78,6 +80,13 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
   const [estadoDeuda, setEstadoDeuda] = useState<EstadoDeuda>(categoria?.estadoDeuda ?? 'Pendiente');
   const [usuarioId, setUsuarioId] = useState(categoria?.usuarioId ?? '');
   const [cobertura, setCobertura] = useState<'' | CoberturaIngreso>(categoria?.cobertura ?? '');
+  const [dividido, setDividido] = useState(categoria ? categoriaDividida(categoria) : false);
+  const [montoQuincena, setMontoQuincena] = useState(
+    categoria?.montoQuincena != null ? String(categoria.montoQuincena) : '',
+  );
+  const [montoFinDeMes, setMontoFinDeMes] = useState(
+    categoria?.montoFinDeMes != null ? String(categoria.montoFinDeMes) : '',
+  );
   const vigIni = parseYM(categoria?.vigenciaDesde);
   const vigFin = parseYM(categoria?.vigenciaHasta);
   const [vigenciaSiempre, setVigenciaSiempre] = useState(
@@ -91,12 +100,30 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
 
   // Cobertura (quincena/fin de mes): ingresos y gastos fijos/necesarios. Vigencia: solo gastos.
   const usaCobertura = tipo === 'Ingreso' || tipo === 'Fijo' || tipo === 'Necesario';
+  const puedeDividir = tipo === 'Fijo' || tipo === 'Necesario';
   const usaVigencia = tipo === 'Fijo' || tipo === 'Necesario';
   const anioActual = new Date().getFullYear();
   const anios = Array.from({ length: 7 }, (_, i) => anioActual - 1 + i);
 
   const guardando = crear.isPending || actualizar.isPending;
-  const valido = nombre.trim().length > 0 && Number(presupuesto) >= 0;
+  const presNum = Number(presupuesto);
+  const sumaDivision = Number(montoQuincena) + Number(montoFinDeMes);
+  const divisionValida =
+    !dividido || (Number(montoQuincena) >= 0 && Number(montoFinDeMes) >= 0 && Math.abs(sumaDivision - presNum) < 0.01);
+  const valido = nombre.trim().length > 0 && presNum >= 0 && divisionValida;
+
+  const activarDivision = (on: boolean) => {
+    setDividido(on);
+    if (on) {
+      const mitad = presNum > 0 ? (presNum / 2).toFixed(2) : '';
+      setMontoQuincena(mitad);
+      setMontoFinDeMes(mitad);
+      setCobertura('');
+    } else {
+      setMontoQuincena('');
+      setMontoFinDeMes('');
+    }
+  };
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
@@ -112,7 +139,9 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
         tipo === 'Deuda' && tieneInteres && capitalPorCuota !== '' ? Number(capitalPorCuota) : null,
       tipoDeuda: tipo === 'Deuda' ? tipoDeuda : null,
       usuarioId: usuarioId || null,
-      cobertura: usaCobertura ? (cobertura || null) : null,
+      cobertura: usaCobertura && !dividido ? (cobertura || null) : null,
+      montoQuincena: puedeDividir && dividido ? Number(montoQuincena) : null,
+      montoFinDeMes: puedeDividir && dividido ? Number(montoFinDeMes) : null,
       vigenciaDesde: usaVigencia && !vigenciaSiempre ? aFecha(desdeAnio, desdeMes) : null,
       vigenciaHasta: usaVigencia && !vigenciaSiempre ? aFecha(hastaAnio, hastaMes) : null,
       // Solo se envía para deudas; en otros tipos queda undefined y el backend no lo toca.
@@ -262,7 +291,45 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
             </Box>
           )}
 
-          {usaCobertura && (
+          {puedeDividir && (
+            <Box>
+              <FormControlLabel
+                control={
+                  <Checkbox checked={dividido} onChange={(e) => activarDivision(e.target.checked)} size="small" />
+                }
+                label="Dividir entre quincena y fin de mes"
+                sx={{ '& .MuiFormControlLabel-label': { fontSize: 13.5 } }}
+              />
+              {dividido && (
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 0.5 }}>
+                  <TextField
+                    label="Quincena (S/)"
+                    type="number"
+                    value={montoQuincena}
+                    onChange={(e) => setMontoQuincena(e.target.value)}
+                    size="small"
+                    slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                    required
+                  />
+                  <TextField
+                    label="Fin de mes (S/)"
+                    type="number"
+                    value={montoFinDeMes}
+                    onChange={(e) => setMontoFinDeMes(e.target.value)}
+                    size="small"
+                    slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                    required
+                  />
+                  <Box sx={{ gridColumn: '1 / -1', fontSize: 12, color: divisionValida ? colors.textTertiary : colors.negative }}>
+                    Suma: S/ {sumaDivision.toFixed(2)}
+                    {!divisionValida && ' — debe coincidir con el presupuesto mensual'}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {usaCobertura && !dividido && (
             <TextField
               select
               label={tipo === 'Ingreso' ? 'Bolsa de este ingreso' : 'Cubierto por'}

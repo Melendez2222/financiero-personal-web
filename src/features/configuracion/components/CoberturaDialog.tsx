@@ -16,6 +16,7 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { colors, tipoColors } from '../../../theme/tokens';
 import { COBERTURA_LABEL, COBERTURAS, TIPO_LABEL } from '../../../types/common';
 import type { Categoria, CoberturaIngreso } from '../../../types';
+import { categoriaDividida } from '../../../types/categoria';
 
 interface Props {
   open: boolean;
@@ -25,12 +26,17 @@ interface Props {
 /** Una fila de gasto con un selector para asignarlo a una bolsa. */
 function GastoRow({
   g,
+  monto,
   onChange,
+  bloqueado = false,
 }: {
   g: Categoria;
+  monto?: number;
   onChange: (id: string, value: string) => void;
+  bloqueado?: boolean;
 }) {
   const { main, soft } = tipoColors[g.tipo];
+  const displayMonto = monto ?? g.presupuesto;
   return (
     <Box
       sx={{
@@ -48,24 +54,29 @@ function GastoRow({
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ fontSize: 13.5, fontWeight: 600 }}>{g.nombre}</Box>
-        <Box sx={{ fontSize: 11, color: colors.textTertiary }}>{TIPO_LABEL[g.tipo]}</Box>
+        <Box sx={{ fontSize: 11, color: colors.textTertiary }}>
+          {TIPO_LABEL[g.tipo]}
+          {bloqueado ? ' · dividido en catálogo' : ''}
+        </Box>
       </Box>
       <Box sx={{ mr: 0.5 }}>
-        <MoneyText value={g.presupuesto} color={main} size={13} />
+        <MoneyText value={displayMonto} color={main} size={13} />
       </Box>
       <TextField
         select
         size="small"
-        value={g.cobertura ?? ''}
+        value={bloqueado ? '' : (g.cobertura ?? '')}
         onChange={(e) => onChange(g.id, e.target.value)}
+        disabled={bloqueado}
         sx={{ minWidth: 130, '& .MuiInputBase-input': { fontSize: 12.5, py: 0.6 } }}
       >
-        <MenuItem value="">Sin asignar</MenuItem>
-        {COBERTURAS.map((c) => (
-          <MenuItem key={c} value={c}>
-            {COBERTURA_LABEL[c]}
-          </MenuItem>
-        ))}
+        <MenuItem value="">{bloqueado ? 'Dividido' : 'Sin asignar'}</MenuItem>
+        {!bloqueado &&
+          COBERTURAS.map((c) => (
+            <MenuItem key={c} value={c}>
+              {COBERTURA_LABEL[c]}
+            </MenuItem>
+          ))}
       </TextField>
     </Box>
   );
@@ -80,10 +91,10 @@ function BolsaSeccion({
 }: {
   bolsa: CoberturaIngreso;
   ingreso: number;
-  items: Categoria[];
+  items: { g: Categoria; monto: number; bloqueado: boolean }[];
   onChange: (id: string, value: string) => void;
 }) {
-  const gastoTotal = items.reduce((a, c) => a + c.presupuesto, 0);
+  const gastoTotal = items.reduce((a, i) => a + i.monto, 0);
   const balance = ingreso - gastoTotal;
   const alcanza = balance >= -0.005;
 
@@ -114,25 +125,45 @@ function BolsaSeccion({
       {items.length === 0 ? (
         <EmptyState>Sin gastos en esta bolsa.</EmptyState>
       ) : (
-        items.map((g) => <GastoRow key={g.id} g={g} onChange={onChange} />)
+        items.map((i) => (
+          <GastoRow
+            key={`${i.g.id}-${bolsa}`}
+            g={i.g}
+            monto={i.monto}
+            bloqueado={i.bloqueado}
+            onChange={onChange}
+          />
+        ))
       )}
     </Box>
   );
+}
+
+function itemsBolsa(gastos: Categoria[], bolsa: CoberturaIngreso) {
+  const items: { g: Categoria; monto: number; bloqueado: boolean }[] = [];
+  for (const g of gastos) {
+    if (categoriaDividida(g)) {
+      const monto = bolsa === 'Quincena' ? g.montoQuincena! : g.montoFinDeMes!;
+      items.push({ g, monto, bloqueado: true });
+    } else if (g.cobertura === bolsa) {
+      items.push({ g, monto: g.presupuesto, bloqueado: false });
+    }
+  }
+  return items;
 }
 
 export function CoberturaDialog({ open, onClose }: Props) {
   const { data: categorias = [] } = useCategorias();
   const setCobertura = useSetCobertura();
 
-  // Solo categorías activas: la cobertura planifica los dos sueldos contra el mes vigente.
   const activos = categorias.filter((c) => c.activo);
   const gastos = activos.filter((c) => c.tipo === 'Fijo' || c.tipo === 'Necesario');
   const ingresos = activos.filter((c) => c.tipo === 'Ingreso');
 
   const ingresoBolsa = (b: CoberturaIngreso) =>
     ingresos.filter((i) => i.cobertura === b).reduce((a, c) => a + c.presupuesto, 0);
-  const gastosBolsa = (b: CoberturaIngreso) => gastos.filter((g) => g.cobertura === b);
-  const sinAsignar = gastos.filter((g) => !g.cobertura);
+
+  const sinAsignar = gastos.filter((g) => !categoriaDividida(g) && !g.cobertura);
 
   const cambiar = (id: string, value: string) =>
     setCobertura.mutate({ id, cobertura: (value || null) as CoberturaIngreso | null });
@@ -148,12 +179,22 @@ export function CoberturaDialog({ open, onClose }: Props) {
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1 }}>
         <Box sx={{ fontSize: 12.5, color: colors.textSecondary }}>
           Asigna cada gasto fijo o necesario a la quincena o al fin de mes, según con qué sueldo lo
-          cubres. Solo se consideran las categorías activas.
+          cubres. Los gastos divididos en el catálogo aparecen en ambas bolsas con su porción.
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-          <BolsaSeccion bolsa="Quincena" ingreso={ingresoBolsa('Quincena')} items={gastosBolsa('Quincena')} onChange={cambiar} />
-          <BolsaSeccion bolsa="FinDeMes" ingreso={ingresoBolsa('FinDeMes')} items={gastosBolsa('FinDeMes')} onChange={cambiar} />
+          <BolsaSeccion
+            bolsa="Quincena"
+            ingreso={ingresoBolsa('Quincena')}
+            items={itemsBolsa(gastos, 'Quincena')}
+            onChange={cambiar}
+          />
+          <BolsaSeccion
+            bolsa="FinDeMes"
+            ingreso={ingresoBolsa('FinDeMes')}
+            items={itemsBolsa(gastos, 'FinDeMes')}
+            onChange={cambiar}
+          />
         </Box>
 
         <Box sx={{ border: `1px dashed ${colors.borderStrong}`, borderRadius: 2.5, p: 1.5 }}>

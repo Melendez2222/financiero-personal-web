@@ -1,4 +1,4 @@
-import type { Tipo } from './common';
+import type { Tipo, CoberturaIngreso } from './common';
 import type { Periodo } from './periodo';
 
 /** Una línea del panel del mes: categoría con su presupuesto y su actual. */
@@ -14,6 +14,8 @@ export interface LineaResumen {
   emoji?: string;
   /** Si la categoría está activa hoy (para el filtro Activos/Todos del panel). */
   activo: boolean;
+  /** Si la categoría está dividida: bolsa de esta porción (quincena / fin de mes). */
+  cobertura?: CoberturaIngreso | null;
 }
 
 /** Agrupación de líneas por tipo (Ingresos, Fijos, Necesarios, Deudas, Ahorros). */

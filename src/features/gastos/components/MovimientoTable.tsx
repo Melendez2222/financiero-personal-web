@@ -6,7 +6,7 @@ import { MoneyText } from '../../../components/ui/MoneyText';
 import { TipoChip } from '../../../components/ui/TipoChip';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { colors } from '../../../theme/tokens';
-import type { Categoria, Movimiento, Usuario } from '../../../types';
+import type { Categoria, MetaAhorro, Movimiento, Usuario } from '../../../types';
 
 const COLS = '78px 1.3fr 116px 108px 1.3fr 110px 70px';
 
@@ -24,11 +24,12 @@ interface Props {
   movimientos: Movimiento[];
   categorias: Categoria[];
   usuarios: Usuario[];
+  metas: MetaAhorro[];
   onEdit: (m: Movimiento) => void;
   onDelete: (m: Movimiento) => void;
 }
 
-export function MovimientoTable({ movimientos, categorias, usuarios, onEdit, onDelete }: Props) {
+export function MovimientoTable({ movimientos, categorias, usuarios, metas, onEdit, onDelete }: Props) {
   const nombrePorId = useMemo(() => {
     const map = new Map<string, string>();
     categorias.forEach((c) => map.set(c.id, c.nombre));
@@ -40,6 +41,12 @@ export function MovimientoTable({ movimientos, categorias, usuarios, onEdit, onD
     usuarios.forEach((u) => map.set(u.id, primerNombre(u.nombre)));
     return map;
   }, [usuarios]);
+
+  const metaPorId = useMemo(() => {
+    const map = new Map<string, string>();
+    metas.forEach((m) => map.set(m.id, m.nombre));
+    return map;
+  }, [metas]);
 
   return (
     <Card sx={{ overflow: 'hidden' }}>
@@ -102,8 +109,28 @@ export function MovimientoTable({ movimientos, categorias, usuarios, onEdit, onD
                 <Box sx={{ color: m.usuarioId ? colors.textSecondary : colors.textTertiary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {m.usuarioId ? (usuarioPorId.get(m.usuarioId) ?? '—') : '—'}
                 </Box>
-                <Box sx={{ color: colors.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {m.nota || '—'}
+                <Box sx={{ color: colors.textSecondary, display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+                  <Box component="span" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {m.nota || '—'}
+                  </Box>
+                  {m.metaId && (
+                    <Box
+                      component="span"
+                      sx={{
+                        flexShrink: 0,
+                        fontSize: 10.5,
+                        fontWeight: 600,
+                        px: 0.75,
+                        py: 0.2,
+                        borderRadius: 1,
+                        bgcolor: `${colors.ahorro}18`,
+                        color: colors.ahorro,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      desde ahorro: {metaPorId.get(m.metaId) ?? '—'}
+                    </Box>
+                  )}
                 </Box>
                 <Box sx={{ textAlign: 'right' }}>
                   <MoneyText value={m.monto} signed positivo={esIngreso} color={esIngreso ? colors.ingreso : colors.textPrimary} />
