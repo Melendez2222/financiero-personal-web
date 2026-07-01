@@ -129,7 +129,8 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
     ? concepto.trim().length > 0 && Number(monto) > 0 && !!fecha
       && (!pagarDesdeAhorro || (!!metaId && !excedeSaldoAhorro))
     : esDividida
-      ? !!categoriaId && Number(montoQuincena) > 0 && Number(montoFinDeMes) > 0 && !!fecha
+      ? !!categoriaId && !!fecha
+        && (Number(montoQuincena) > 0 || Number(montoFinDeMes) > 0)
       : !!categoriaId && Number(monto) > 0 && !!fecha
         && (!pagarDesdeAhorro || (!!metaId && !excedeSaldoAhorro));
 
@@ -159,10 +160,18 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
         nota,
         usuarioId: usuarioId || null,
       };
-      await Promise.all([
-        crear.mutateAsync({ ...base, monto: Number(montoQuincena), cobertura: 'Quincena' as const }),
-        crear.mutateAsync({ ...base, monto: Number(montoFinDeMes), cobertura: 'FinDeMes' as const }),
-      ]);
+      const creaciones = [];
+      if (Number(montoQuincena) > 0) {
+        creaciones.push(
+          crear.mutateAsync({ ...base, monto: Number(montoQuincena), cobertura: 'Quincena' as const }),
+        );
+      }
+      if (Number(montoFinDeMes) > 0) {
+        creaciones.push(
+          crear.mutateAsync({ ...base, monto: Number(montoFinDeMes), cobertura: 'FinDeMes' as const }),
+        );
+      }
+      await Promise.all(creaciones);
     } else {
       const datos = {
         periodoId: periodo.id,
@@ -271,7 +280,6 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
                 onChange={(e) => setMontoQuincena(e.target.value)}
                 size="small"
                 slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
-                required
               />
               <TextField
                 label="Fin de mes (S/)"
@@ -280,7 +288,6 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
                 onChange={(e) => setMontoFinDeMes(e.target.value)}
                 size="small"
                 slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
-                required
               />
               <TextField
                 label="Fecha"
@@ -293,7 +300,7 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
                 sx={{ gridColumn: '1 / -1' }}
               />
               <Box sx={{ gridColumn: '1 / -1', fontSize: 12, color: colors.textTertiary }}>
-                Se registrarán dos movimientos (quincena y fin de mes) para esta categoría.
+                Ingresa solo quincena, solo fin de mes, o ambos. Se registrará un movimiento por cada monto.
               </Box>
             </Box>
           ) : (
