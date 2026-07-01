@@ -20,7 +20,7 @@ import { useUsuarios } from '../../../api/hooks/useUsuarios';
 import { useAuth } from '../../../context/AuthContext';
 import { TIPO_LABEL } from '../../../types/common';
 import { colors } from '../../../theme/tokens';
-import type { Movimiento, Periodo, Tipo } from '../../../types';
+import type { Categoria, Movimiento, Periodo, Tipo } from '../../../types';
 
 interface Props {
   open: boolean;
@@ -55,10 +55,16 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
   const esIngresoExtra = esIngreso && esExtra;
   const montoBloqueado = esIngreso && !montoDiferente && !esIngresoExtra;
 
-  const categoriasDelTipo = useMemo(
-    () => categorias.filter((c) => c.tipo === tipo).sort((a, b) => a.orden - b.orden),
-    [categorias, tipo],
-  );
+  const categoriasDelTipo = useMemo(() => {
+    const inicio = periodo.fechaInicio;
+    const vigente = (c: Categoria) =>
+      (!c.vigenciaDesde || inicio >= c.vigenciaDesde) &&
+      (!c.vigenciaHasta || inicio <= c.vigenciaHasta);
+    return categorias
+      .filter((c) => c.tipo === tipo)
+      .filter((c) => (c.activo && vigente(c)) || c.id === movimiento?.categoriaId)
+      .sort((a, b) => a.orden - b.orden);
+  }, [categorias, tipo, periodo.fechaInicio, movimiento?.categoriaId]);
 
   const seleccionarCategoria = (id: string) => {
     setCategoriaId(id);
