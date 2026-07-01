@@ -45,13 +45,15 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
   const [fecha, setFecha] = useState(movimiento?.fecha ?? periodo.fechaInicio);
   const [nota, setNota] = useState(movimiento?.nota ?? '');
   const [usuarioId, setUsuarioId] = useState(movimiento?.usuarioId ?? usuario?.id ?? '');
+  const esExtra = editando && movimiento?.tipo === 'Ingreso' && !movimiento.categoriaId;
   // Para ingresos: al elegir la categoría se auto-jala su presupuesto y el monto queda bloqueado;
   // este switch lo libera para registrar un monto distinto (ej. recibí menos). Al editar, libre.
   const [montoDiferente, setMontoDiferente] = useState(editando);
 
   const esSituacional = tipo === 'Situacional';
   const esIngreso = tipo === 'Ingreso';
-  const montoBloqueado = esIngreso && !montoDiferente;
+  const esIngresoExtra = esIngreso && esExtra;
+  const montoBloqueado = esIngreso && !montoDiferente && !esIngresoExtra;
 
   const categoriasDelTipo = useMemo(
     () => categorias.filter((c) => c.tipo === tipo).sort((a, b) => a.orden - b.orden),
@@ -76,7 +78,7 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
   };
 
   const guardando = crear.isPending || actualizar.isPending;
-  const valido = esSituacional
+  const valido = esSituacional || esIngresoExtra
     ? concepto.trim().length > 0 && Number(monto) > 0 && !!fecha
     : !!categoriaId && Number(monto) > 0 && !!fecha;
 
@@ -89,8 +91,8 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
       fecha,
       monto: Number(monto),
       nota,
-      categoriaId: esSituacional ? null : categoriaId,
-      concepto: esSituacional ? concepto.trim() : null,
+      categoriaId: esSituacional || esIngresoExtra ? null : categoriaId,
+      concepto: esSituacional || esIngresoExtra ? concepto.trim() : null,
       usuarioId: usuarioId || null,
     };
     if (editando && movimiento) {
@@ -135,7 +137,7 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
             ))}
           </TextField>
 
-          {esSituacional ? (
+          {esSituacional || esIngresoExtra ? (
             <TextField
               label="Concepto"
               value={concepto}
@@ -143,8 +145,12 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
               size="small"
               fullWidth
               required
-              placeholder="Ej. Reparación de laptop"
-              helperText="Gasto imprevisto, sin categoría del catálogo."
+              placeholder={esIngresoExtra ? 'Ej. Bono, Venta' : 'Ej. Reparación de laptop'}
+              helperText={
+                esIngresoExtra
+                  ? 'Ingreso puntual fuera del catálogo.'
+                  : 'Gasto imprevisto, sin categoría del catálogo.'
+              }
             />
           ) : (
             <Box>
@@ -198,7 +204,7 @@ export function MovimientoDialog({ open, onClose, periodo, tiposPermitidos, movi
             />
           </Box>
 
-          {esIngreso && (
+          {esIngreso && !esIngresoExtra && (
             <FormControlLabel
               control={
                 <Switch
