@@ -98,10 +98,12 @@ export function CategoriaDialog({ open, onClose, tipo, categoria }: Props) {
   const [hastaAnio, setHastaAnio] = useState(vigFin.anio);
   const [activo, setActivo] = useState(categoria?.activo ?? true);
 
-  // Cobertura (quincena/fin de mes): ingresos y gastos fijos/necesarios. Vigencia: solo gastos.
+  // Cobertura (quincena/fin de mes): ingresos y gastos fijos/necesarios.
+  // Vigencia (solo este mes / en adelante / rango): ingresos, gastos fijos/necesarios y ahorros.
   const usaCobertura = tipo === 'Ingreso' || tipo === 'Fijo' || tipo === 'Necesario';
   const puedeDividir = tipo === 'Fijo' || tipo === 'Necesario';
-  const usaVigencia = tipo === 'Fijo' || tipo === 'Necesario';
+  const usaVigencia =
+    tipo === 'Fijo' || tipo === 'Necesario' || tipo === 'Ingreso' || tipo === 'Ahorro';
   const anioActual = new Date().getFullYear();
   const anios = Array.from({ length: 7 }, (_, i) => anioActual - 1 + i);
 

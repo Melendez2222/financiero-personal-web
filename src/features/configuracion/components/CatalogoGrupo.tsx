@@ -34,14 +34,16 @@ export function CatalogoGrupo({ tipo, categorias }: Props) {
   const [aEliminar, setAEliminar] = useState<Categoria | null>(null);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
   const [gestionar, setGestionar] = useState(false);
-  // Filtro "Del mes / Todos" + gestión de cobertura solo para gastos fijos y necesarios.
-  const conFiltro = tipo === 'Fijo' || tipo === 'Necesario';
+  // Filtro "Del mes / Todos" para los tipos con vigencia; gestión de cobertura solo fijos/necesarios.
+  const usaVigencia =
+    tipo === 'Fijo' || tipo === 'Necesario' || tipo === 'Ingreso' || tipo === 'Ahorro';
+  const conCobertura = tipo === 'Fijo' || tipo === 'Necesario';
   const [verDelMes, setVerDelMes] = useState(true);
 
   const subtitulo = tipo === 'Ahorro' ? 'aporte mensual' : 'presupuesto mensual';
   // "Del mes" = activas y vigentes en el mes seleccionado del header (lo que aplica ese mes).
   const visibles =
-    conFiltro && verDelMes
+    usaVigencia && verDelMes
       ? categorias.filter(
           (c) =>
             c.activo &&
@@ -56,7 +58,7 @@ export function CatalogoGrupo({ tipo, categorias }: Props) {
       subtitle={`${visibles.length} ${visibles.length === 1 ? 'ítem' : 'ítems'}`}
       action={
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          {conFiltro && (
+          {usaVigencia && (
             <ToggleButtonGroup
               size="small"
               exclusive
@@ -68,7 +70,7 @@ export function CatalogoGrupo({ tipo, categorias }: Props) {
               <ToggleButton value="todos">Todos</ToggleButton>
             </ToggleButtonGroup>
           )}
-          {conFiltro && (
+          {conCobertura && (
             <Tooltip title="Gestionar cobertura (quincena / fin de mes)">
               <IconButton size="small" onClick={() => setGestionar(true)} sx={{ color: main }}>
                 <TuneIcon sx={{ fontSize: 18 }} />
@@ -93,7 +95,7 @@ export function CatalogoGrupo({ tipo, categorias }: Props) {
       <Box sx={{ px: 1.5, py: 0.5 }}>
         {visibles.length === 0 && (
           <EmptyState>
-            {conFiltro && verDelMes && categorias.length > 0
+            {usaVigencia && verDelMes && categorias.length > 0
               ? 'Nada para este mes. Cambia a "Todos" para ver todo el catálogo.'
               : 'Sin categorías. Agrega la primera.'}
           </EmptyState>
