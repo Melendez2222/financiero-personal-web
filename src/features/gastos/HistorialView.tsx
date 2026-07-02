@@ -21,9 +21,11 @@ interface Props {
   textoNuevo: string;
   /** Si se provee, reemplaza el botón por defecto de "nuevo" (p.ej. el modal de registro rápido). */
   accionNueva?: ReactNode;
+  /** Acción adicional a la izquierda del botón "nuevo" (p.ej. "Pagar pendientes"), sin reemplazarlo. */
+  accionExtra?: ReactNode;
 }
 
-export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accionNueva }: Props) {
+export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accionNueva, accionExtra }: Props) {
   const { periodos, periodoActivo, periodoId } = usePeriodoActivo();
   const { data: categorias = [] } = useCategorias();
   const { data: metas = [] } = useMetas(periodoId ?? undefined);
@@ -80,7 +82,8 @@ export function HistorialView({ tiposPermitidos, mostrarTipo, textoNuevo, accion
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
+        {accionExtra}
         {accionNueva ?? (
           <Button variant="contained" startIcon={<AddIcon />} onClick={abrirNuevo}>
             {textoNuevo}

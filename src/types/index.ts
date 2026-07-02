@@ -8,3 +8,4 @@ export * from './configuracion';
 export * from './resumen';
 export * from './proyeccion';
 export * from './deuda';
+export * from './pendiente';

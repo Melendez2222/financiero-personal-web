@@ -27,5 +27,6 @@ export const endpoints = {
   dashboard: '/dashboard',
   proyeccion: '/proyeccion',
   deudas: '/deudas',
+  pendientes: '/pendientes',
   usuarios: '/usuarios',
 } as const;

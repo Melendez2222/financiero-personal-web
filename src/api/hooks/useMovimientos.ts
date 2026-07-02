@@ -21,6 +21,7 @@ function invalidarDerivados(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['dashboard'] });
   qc.invalidateQueries({ queryKey: ['metas'] });
   qc.invalidateQueries({ queryKey: ['deudas'] });
+  qc.invalidateQueries({ queryKey: ['pendientes'] });
 }
 
 export function useCrearMovimiento() {

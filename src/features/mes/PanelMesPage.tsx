@@ -13,6 +13,7 @@ import { SeccionLineas } from './components/SeccionLineas';
 import { SituacionalesCard } from './components/SituacionalesCard';
 import { FaseActualCard } from './components/FaseActualCard';
 import { CartillaIngresos } from '../ingresos/components/CartillaIngresos';
+import { CartillaPendientes } from '../gastos/components/CartillaPendientes';
 import type { CoberturaIngreso, ResumenPeriodo, SeccionResumen } from '../../types';
 
 type Filtro = 'fase' | 'pendiente' | 'cumplido' | 'global';
@@ -142,7 +143,10 @@ export function PanelMesPage() {
           </ToggleButtonGroup>
           {!esFase && <PersonaSelect value={persona} onChange={setPersona} />}
         </Box>
-        <CartillaIngresos />
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <CartillaPendientes />
+          <CartillaIngresos />
+        </Box>
       </Box>
 
       {esFase ? (
